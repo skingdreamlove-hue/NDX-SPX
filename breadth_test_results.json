@@ -1,0 +1,52 @@
+{
+  "yfinance": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "barchart": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "finviz": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "investors": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "optuma": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "stockcharts": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "fidelity": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "wsj": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "alphaquery": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  },
+  "etf": {
+    "ndx_ratio": null,
+    "spx_ratio": null,
+    "success": false
+  }
+}

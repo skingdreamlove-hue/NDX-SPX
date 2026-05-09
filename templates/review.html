@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复盘进化 - 美股情绪监测</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            background-color: #F9FAFB;
+            color: #111827;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            gap: 24px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+            margin: 0;
+        }
+        .header-badge {
+            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .switch-btn {
+            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+            text-decoration: none;
+            display: inline-block;
+        }
+        .switch-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37,99,235,0.35);
+        }
+        .dashboard-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .panel-toggle {
+            font-size: 20px;
+        }
+        .panel-content {
+            display: block;
+        }
+        .statgrid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #E5E7EB;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        .stat-sub {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+        .chart-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        canvas {
+            width: 100%;
+            height: 280px;
+        }
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .bar-chart-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .bar-chart-title {
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .bar-label {
+            width: 140px;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .bar-wrapper {
+            flex-grow: 1;
+            height: 24px;
+            background: #E5E7EB;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563EB, #3B82F6);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+        .bar-value {
+            width: 100px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            padding-left: 12px;
+        }
+        .bar-bottom-note {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .records-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .records-title {
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .filters {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #D1D5DB;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background: #2563EB;
+            color: white;
+            border-color: #2563EB;
+        }
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .records-table th,
+        .records-table td {
+            padding: 10px;
+            border-bottom: 1px solid #E5E7EB;
+            text-align: left;
+        }
+        .records-table th {
+            color: #6B7280;
+            font-weight: 600;
+        }
+        .tag {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .tag.correct {
+            background: #D1FAE5;
+            color: #064E3B;
+        }
+        .tag.wrong {
+            background: #FEE2E2;
+            color: #7F1D1D;
+        }
+        .tag.neutral {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        .tag.pending {
+            background: #FEF3C7;
+            color: #78350F;
+        }
+        .bottom-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .gemini-btn {
+            background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+        }
+        .gemini-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16,185,129,0.35);
+        }
+        .gemini-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .gemini-settings-btn {
+            background: #F3F4F6;
+            border: 1px solid #D1D5DB;
+            color: #6B7280;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .gemini-settings-btn:hover {
+            background: #E5E7EB;
+            color: #374151;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 440px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 20px 0;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .modal-btn-save {
+            background: #2563EB;
+            color: white;
+        }
+        .modal-btn-save:hover {
+            background: #1D4ED8;
+        }
+        .modal-btn-clear {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .modal-btn-clear:hover {
+            background: #FECACA;
+        }
+        .modal-btn-cancel {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #E5E7EB;
+        }
+        .suggestions-panel {
+            background: #FFFBEB;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            display: none;
+        }
+        .suggestions-panel.active {
+            display: block;
+        }
+        .suggestions-title {
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .suggestions-summary {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .suggestions-list {
+            margin-bottom: 20px;
+        }
+        .suggestion-item {
+            margin-bottom: 8px;
+        }
+        .suggestions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .suggestions-table th,
+        .suggestions-table td {
+            padding: 12px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .priority-highlight {
+            background: #FEE2E2;
+            border-left: 4px solid #DC2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .suggestions-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #2563EB;
+            color: white;
+        }
+        .btn-secondary {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        @media (max-width: 1024px) {
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+            .statgrid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1 class="header-title">复盘进化</h1>
+                <span class="header-badge">准确率看板</span>
+            </div>
+            <div class="header-right">
+                <a href="/" class="switch-btn">返回主页面</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <div class="panel-title">📊 实时准确率看板</div>
+                <div class="panel-toggle">▼</div>
+            </div>
+            <div class="panel-content">
+                <div class="statgrid-4">
+                    <div class="stat-card">
+                        <div class="stat-label">综合准确率</div>
+                        <div class="stat-value" id="stat-overall">--</div>
+                        <div class="stat-sub" id="stat-overall-sub">数据积累中</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">本月准确率</div>
+                        <div class="stat-value" id="stat-monthly">--</div>
+                        <div class="stat-sub" id="stat-monthly-sub">数据积累中</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">待验证信号</div>
+                        <div class="stat-value" id="stat-pending">0</div>
+                        <div class="stat-sub">条</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">累计运行</div>
+                        <div class="stat-value" id="stat-days">0</div>
+                        <div class="stat-sub">天</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+                
+                <div class="two-col-grid">
+                    <div class="bar-chart-container">
+                        <div class="bar-chart-title">各情绪级别命中率</div>
+                        <div id="emotion-bars"></div>
+                        <div class="bar-bottom-note" id="emotion-bottom-note"></div>
+                    </div>
+                    <div class="bar-chart-container">
+                        <div class="bar-chart-title">各指标触发贡献度</div>
+                        <div id="indicator-bars"></div>
+                        <div class="bar-bottom-note" id="indicator-bottom-note"></div>
+                    </div>
+                </div>
+                
+                <div class="records-container">
+                    <div class="records-title">
+                        <span>最近信号记录</span>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="all">全部</button>
+                            <button class="filter-btn" data-filter="wrong">误判</button>
+                            <button class="filter-btn" data-filter="pending">待验证</button>
+                        </div>
+                    </div>
+                    <table class="records-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>情绪</th>
+                                <th>NDX涨跌</th>
+                                <th>SPX涨跌</th>
+                                <th>背离</th>
+                                <th>验证结果</th>
+                            </tr>
+                        </thead>
+                        <tbody id="records-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-actions">
+            <button id="geminiBtn" class="gemini-btn" onclick="requestGeminiSuggestions()">让 Gemini 分析误判规律并给出优化建议 ↗</button>
+            <button id="geminiSettingsBtn" class="gemini-settings-btn" onclick="showGeminiSettings()" title="配置 API Key">⚙</button>
+        </div>
+        
+        <div class="suggestions-panel" id="suggestionsPanel">
+            <div class="suggestions-title">💡 Gemini 优化建议</div>
+            <div class="suggestions-summary" id="suggestionsSummary"></div>
+            <ul class="suggestions-list" id="suggestionsIssues"></ul>
+            <table class="suggestions-table">
+                <thead>
+                    <tr>
+                        <th>指标</th>
+                        <th>当前阈值</th>
+                        <th>建议阈值</th>
+                        <th>调整原因</th>
+                    </tr>
+                </thead>
+                <tbody id="suggestionsTableBody"></tbody>
+            </table>
+            <div class="priority-highlight" id="priorityHighlight"></div>
+            <div class="suggestions-btns">
+                <button class="btn btn-secondary" onclick="closeSuggestions()">关闭</button>
+                <button class="btn btn-primary" onclick="saveSuggestions()">保存建议记录</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="geminiKeyModal">
+        <div class="modal-content">
+            <h3 class="modal-title">配置 Gemini API Key</h3>
+            <input type="password" id="geminiKeyInput" class="modal-input" placeholder="输入你的 Gemini API Key">
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeGeminiSettings()">取消</button>
+                <button class="modal-btn modal-btn-clear" onclick="clearGeminiKey()">清除</button>
+                <button class="modal-btn modal-btn-save" onclick="saveGeminiKey()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script>
+        let dailyLogData = [];
+        let chartInstance = null;
+        let currentFilter = 'all';
+        let lastSuggestions = null;
+        
+        window.onload = function() {
+            loadDailyLog();
+            loadGeminiKeyFromStorage();
+        };
+
+        function loadGeminiKeyFromStorage() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('geminiKeyInput').value = savedKey;
+            }
+        }
+        
+        async function loadDailyLog() {
+            try {
+                const response = await fetch('/daily_log.json');
+                dailyLogData = await response.json();
+                updateDashboard();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        
+        function updateDashboard() {
+            if (!dailyLogData || !dailyLogData.length) {
+                return;
+            }
+            
+            const verified = dailyLogData.filter(x => x.verify_5d && x.verify_5d.status === 'verified');
+            const correct = verified.filter(x => x.verify_5d.result === 'correct');
+            const overallAccuracy = verified.length >= 5 ? Math.round((correct.length / verified.length) * 100) : null;
+            
+            if (overallAccuracy !== null) {
+                document.getElementById('stat-overall').textContent = overallAccuracy + '%';
+                document.getElementById('stat-overall-sub').textContent = `基于 ${verified.length} 条验证`;
+            } else {
+                document.getElementById('stat-overall').textContent = '--';
+                document.getElementById('stat-overall-sub').textContent = `数据积累中 (${verified.length}条)`;
+            }
+            
+            // 本月准确率
+            const now = new Date();
+            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const prevMonth = now.getMonth() === 0 
+                ? (now.getFullYear() - 1) + '-12' 
+                : now.getFullYear() + '-' + String(now.getMonth()).padStart(2, '0');
+            
+            const monthlyVerified = dailyLogData.filter(x => 
+                x.verify_5d && x.verify_5d.status !== 'pending' && x.date && x.date.startsWith(currentMonth)
+            );
+            const monthlyCorrect = monthlyVerified.filter(x => x.verify_5d.result === 'correct');
+            const monthlyAcc = monthlyVerified.length > 0 ? Math.round((monthlyCorrect.length / monthlyVerified.length) * 100) : null;
+            
+            if (monthlyAcc !== null) {
+                document.getElementById('stat-monthly').textContent = monthlyAcc + '%';
+                
+                const prevMonthVerified = dailyLogData.filter(x => 
+                    x.verify_5d && x.verify_5d.status !== 'pending' && x.date && x.date.startsWith(prevMonth)
+                );
+                if (prevMonthVerified.length > 0) {
+                    const prevMonthCorrect = prevMonthVerified.filter(x => x.verify_5d.result === 'correct');
+                    const prevMonthAcc = Math.round((prevMonthCorrect.length / prevMonthVerified.length) * 100);
+                    const diff = monthlyAcc - prevMonthAcc;
+                    if (diff >= 0) {
+                        document.getElementById('stat-monthly-sub').textContent = `↑较上月+${diff}%`;
+                    } else {
+                        document.getElementById('stat-monthly-sub').textContent = `↓较上月${diff}%`;
+                    }
+                } else {
+                    document.getElementById('stat-monthly-sub').textContent = '首月运行中';
+                }
+            } else {
+                document.getElementById('stat-monthly').textContent = '--';
+                if (monthlyVerified.length >= 3) {
+                    document.getElementById('stat-monthly-sub').textContent = '数据积累中';
+                } else {
+                    document.getElementById('stat-monthly-sub').textContent = '数据积累中';
+                }
+            }
+            
+            const pending = dailyLogData.filter(x => x.verify_5d && x.verify_5d.status === 'pending').length;
+            document.getElementById('stat-pending').textContent = pending;
+            
+            // 累计运行天数（交易日数量）
+            const uniqueDates = [...new Set(dailyLogData.map(x => x.date))].sort();
+            document.getElementById('stat-days').textContent = uniqueDates.length;
+            
+            renderEmotionBars();
+            renderIndicatorBars();
+            renderRecordsTable();
+            renderAccuracyChart();
+        }
+        
+        function renderEmotionBars() {
+            const emotions = ['极度恐慌', '恐慌', '中性', '贪婪', '极度贪婪'];
+            const emotionContainer = document.getElementById('emotion-bars');
+            const emotionStats = {};
+            emotions.forEach(emotion => emotionStats[emotion] = { total: 0, correct: 0 });
+            
+            dailyLogData.forEach(entry => {
+                const emotion = entry.signal?.emotion;
+                if (!emotion) return;
+                if (!emotionStats[emotion]) emotionStats[emotion] = { total: 0, correct: 0 };
+                emotionStats[emotion].total++;
+                if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                    emotionStats[emotion].correct++;
+                }
+            });
+            
+            let html = '';
+            emotions.forEach(emotion => {
+                const stats = emotionStats[emotion];
+                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                if (stats.total === 0) {
+                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                } else {
+                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                }
+            });
+            emotionContainer.innerHTML = html;
+            document.getElementById('emotion-bottom-note').textContent = '各情绪级别命中率统计';
+        }
+        
+        function renderIndicatorBars() {
+            const indicators = ['VIX恐慌指数', '高收益债信用利差', 'NDX高于MA200广度', 'QQQ PCR偏离', 'NDX偏离MA200', 'VIX期限结构'];
+            const indicatorContainer = document.getElementById('indicator-bars');
+            const indicatorStats = {};
+            indicators.forEach(ind => indicatorStats[ind] = { total: 0, correct: 0 });
+            
+            dailyLogData.forEach(entry => {
+                const conditions = entry.signal?.triggered_conditions || [];
+                conditions.forEach(cond => {
+                    indicators.forEach(ind => {
+                        if (cond.includes(ind) || cond.includes(ind.slice(0,4))) {
+                            indicatorStats[ind].total++;
+                            if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                                indicatorStats[ind].correct++;
+                            }
+                        }
+                    });
+                });
+            });
+            
+            let html = '';
+            let bestInd = null;
+            let bestRate = 0;
+            
+            indicators.forEach(ind => {
+                const stats = indicatorStats[ind];
+                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                if (stats.total >= 2 && rate > bestRate) {
+                    bestRate = rate;
+                    bestInd = ind;
+                }
+                
+                if (stats.total === 0) {
+                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                } else {
+                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                }
+            });
+            indicatorContainer.innerHTML = html;
+            const note = bestInd ? `最可靠指标：${bestInd} (${bestRate}% 命中率)` : '暂无足够数据';
+            document.getElementById('indicator-bottom-note').textContent = note;
+        }
+        
+        function renderAccuracyChart() {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            const verified = dailyLogData
+                .filter(x => x.verify_5d && x.verify_5d.status === 'verified')
+                .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            
+            if (verified.length < 7) {
+                document.getElementById('accuracyChart').style.display = 'none';
+                const container = document.getElementById('accuracyChart').parentElement;
+                let placeholder = container.querySelector('.chart-placeholder-msg');
+                if (!placeholder) {
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'chart-placeholder-msg';
+                    container.appendChild(placeholder);
+                }
+                placeholder.textContent = `数据积累中，至少需要7条已验证记录（当前${verified.length}条）`;
+                return;
+            }
+            
+            const placeholder = document.querySelector('.chart-placeholder-msg');
+            if (placeholder) placeholder.remove();
+            document.getElementById('accuracyChart').style.display = '';
+            
+            const labels = [];
+            const rollingAcc = [];
+            
+            for (let i = 0; i < verified.length; i++) {
+                labels.push(verified[i].date || '');
+                let correct = 0;
+                let count = 0;
+                for (let j = i; j >= 0 && count < 7; j--) {
+                    count++;
+                    if (verified[j].verify_5d.result === 'correct') correct++;
+                }
+                rollingAcc.push(count >= 7 ? Math.round((correct / count) * 100) : null);
+            }
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '7日滚动准确率',
+                            data: rollingAcc,
+                            borderColor: '#2563EB',
+                            backgroundColor: 'rgba(37,99,235,0.1)',
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#2563EB',
+                            fill: false,
+                            tension: 0.2,
+                            spanGaps: false,
+                        },
+                        {
+                            label: '50%基准线',
+                            data: labels.map(() => 50),
+                            borderColor: '#DC2626',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 16,
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                callback: v => v + '%'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.08)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 15,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderRecordsTable() {
+            const tbody = document.getElementById('records-tbody');
+            const recent = dailyLogData.slice(-20).reverse();
+            const filtered = recent.filter(entry => {
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'wrong') return entry.verify_5d?.result === 'wrong';
+                if (currentFilter === 'pending') return entry.verify_5d?.status === 'pending';
+                return true;
+            });
+            
+            let html = '';
+            filtered.forEach(entry => {
+                const verify5 = entry.verify_5d;
+                let tagClass = 'pending';
+                let tagText = '待验证';
+                
+                if (verify5?.status === 'verified') {
+                    if (verify5.result === 'correct') { tagClass = 'correct'; tagText = '正确'; }
+                    else if (verify5.result === 'wrong') { tagClass = 'wrong'; tagText = '误判'; }
+                    else { tagClass = 'neutral'; tagText = '中性'; }
+                }
+                
+                const ndxRet = typeof verify5?.ndx_return === 'number' ? verify5.ndx_return.toFixed(2) + '%' : '--';
+                const spxRet = typeof verify5?.spx_return === 'number' ? verify5.spx_return.toFixed(2) + '%' : '--';
+                const divergence = verify5?.divergence || '--';
+                
+                html += `<tr>
+                    <td>${entry.date}</td>
+                    <td>${entry.signal?.emotion || '--'}</td>
+                    <td>${ndxRet}</td>
+                    <td>${spxRet}</td>
+                    <td>${divergence}</td>
+                    <td><span class="tag ${tagClass}">${tagText}</span></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+        }
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderRecordsTable();
+            };
+        });
+        
+        async function requestGeminiSuggestions() {
+            const btn = document.getElementById('geminiBtn');
+            const apiKey = localStorage.getItem('gemini_api_key');
+
+            if (!apiKey) {
+                alert('请先点击右侧齿轮图标⚙配置 Gemini API Key');
+                showGeminiSettings();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '分析中...';
+
+            try {
+                const reviewRes = await fetch('/api/review-data');
+                const reviewData = await reviewRes.json();
+
+                const prompt = buildGeminiPrompt(reviewData);
+
+                const geminiRes = await fetch('/api/call-gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey, prompt: prompt })
+                });
+                const geminiData = await geminiRes.json();
+
+                if (geminiData.error) {
+                    alert('Gemini 分析失败: ' + geminiData.error);
+                    return;
+                }
+
+                const parsed = parseGeminiResult(geminiData.result);
+                lastSuggestions = parsed;
+                showSuggestions(parsed);
+            } catch (e) {
+                alert('请求失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '让 Gemini 分析误判规律并给出优化建议 ↗';
+            }
+        }
+
+        function buildGeminiPrompt(reviewData) {
+            const strategyText = reviewData.strategy_text || '';
+            const signalRecords = reviewData.signal_records || [];
+            const dailyLogs = reviewData.daily_logs || [];
+            const summary = reviewData.summary || {};
+
+            const latestLogs = dailyLogs.slice(-30);
+            const verifiedLogs = latestLogs.filter(x => x.verify_5d && x.verify_5d.status === 'verified');
+            const wrongLogs = verifiedLogs.filter(x => x.verify_5d.result === 'wrong');
+            const correctLogs = verifiedLogs.filter(x => x.verify_5d.result === 'correct');
+
+            let logsText = '';
+            latestLogs.forEach(log => {
+                const v = log.verify_5d;
+                let resultText = v ? (v.status === 'verified' ? (v.result === 'correct' ? '正确' : '误判') : '待验证') : '无';
+                logsText += `日期:${log.date} 情绪:${log.signal?.emotion} 触发条件:${JSON.stringify(log.signal?.triggered_conditions)} NDX涨跌:${v?.ndx_return}% SPX涨跌:${v?.spx_return}% 结果:${resultText}\n`;
+            });
+
+            let recordsText = '';
+            signalRecords.forEach(rec => {
+                recordsText += JSON.stringify(rec, null, 2) + '\n';
+            });
+
+            const prompt = `你是一个量化策略分析师。请分析以下美股情绪监测系统的误判规律，并给出优化建议。
+
+## 策略规则
+${strategyText}
+
+## 信号验证记录
+${recordsText || '暂无信号验证记录'}
+
+## 最近每日情绪日志（含验证结果）
+总信号数:${summary.total_signals} 已验证:${summary.verified_count} 正确:${summary.correct_count} 待验证:${summary.pending_count}
+误判记录数:${wrongLogs.length} 正确记录数:${correctLogs.length}
+
+${logsText}
+
+请分析：
+1. 误判的主要原因和规律（重点关注哪些情绪级别容易误判，哪些指标组合容易出问题）
+2. 各指标的可靠性排序
+3. 阈值优化建议（当前阈值 vs 建议阈值）
+4. 最优先需要调整的规则
+
+请以JSON格式返回，只返回JSON不要加任何解释文字，格式如下：
+{
+  "summary": "总体分析概述（1-2句话）",
+  "top_issues": ["问题1", "问题2", "问题3"],
+  "suggestions": [
+    {"indicator": "指标名称", "current_threshold": "当前阈值", "suggested_threshold": "建议阈值", "reason": "调整原因"}
+  ],
+  "priority": "最优先执行的调整建议（一句话）"
+}`;
+            return prompt;
+        }
+
+        function parseGeminiResult(text) {
+            try {
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+            } catch (e) {}
+
+            return {
+                summary: text.slice(0, 200),
+                top_issues: ['未能解析结构化建议'],
+                suggestions: [],
+                priority: '请查看原始返回内容'
+            };
+        }
+
+        function showGeminiSettings() {
+            const modal = document.getElementById('geminiKeyModal');
+            const input = document.getElementById('geminiKeyInput');
+            const savedKey = localStorage.getItem('gemini_api_key');
+            input.value = savedKey || '';
+            modal.classList.add('active');
+            setTimeout(() => input.focus(), 100);
+        }
+
+        function closeGeminiSettings() {
+            document.getElementById('geminiKeyModal').classList.remove('active');
+        }
+
+        function saveGeminiKey() {
+            const input = document.getElementById('geminiKeyInput');
+            const key = input.value.trim();
+            if (!key) {
+                alert('请输入有效的 API Key');
+                return;
+            }
+            localStorage.setItem('gemini_api_key', key);
+            closeGeminiSettings();
+        }
+
+        function clearGeminiKey() {
+            localStorage.removeItem('gemini_api_key');
+            document.getElementById('geminiKeyInput').value = '';
+            closeGeminiSettings();
+        }
+        
+        function showSuggestions(data) {
+            const panel = document.getElementById('suggestionsPanel');
+            if (!data) return;
+            panel.classList.add('active');
+            
+            document.getElementById('suggestionsSummary').textContent = data.summary || '';
+            
+            let issuesHtml = '';
+            (data.top_issues || []).forEach(issue => issuesHtml += `<li class="suggestion-item">${issue}</li>`);
+            document.getElementById('suggestionsIssues').innerHTML = issuesHtml;
+            
+            let tableHtml = '';
+            (data.suggestions || []).forEach(suggestion => {
+                tableHtml += `<tr>
+                    <td>${suggestion.indicator || ''}</td>
+                    <td>${suggestion.current_threshold || ''}</td>
+                    <td>${suggestion.suggested_threshold || ''}</td>
+                    <td>${suggestion.reason || ''}</td>
+                </tr>`;
+            });
+            document.getElementById('suggestionsTableBody').innerHTML = tableHtml;
+            
+            document.getElementById('priorityHighlight').textContent = '最优先执行：' + (data.priority || '');
+        }
+        
+        function closeSuggestions() {
+            document.getElementById('suggestionsPanel').classList.remove('active');
+        }
+        
+        async function saveSuggestions() {
+            if (!lastSuggestions) return;
+            try {
+                const res = await fetch('/save_suggestion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lastSuggestions) });
+                const data = await res.json();
+                if (data && data.success) { alert('保存成功！'); }
+                else { alert('保存失败'); }
+            } catch (e) { alert('保存失败'); }
+        }
+    </script>
+</body>
+</html>

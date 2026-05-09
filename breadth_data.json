@@ -1,0 +1,9 @@
+{
+  "last_updated": "2026-04-28",
+  "sp500_breadth_200ma": 50.0,
+  "ndx_breadth_200ma": 50.0,
+  "update_time": "2026-04-28 22:25:32",
+  "source": "yfinance Quote API",
+  "task_status": "success",
+  "task_duration_seconds": 1093
+}

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美股场外基金限购查询</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: #F9FAFB; color: #111827; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; gap: 24px; }
+        .header-left { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .header-title { font-size: 28px; font-weight: 800; color: #111827; margin: 0; }
+        .header-badge { background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); color: white; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+        .header-actions { display: flex; gap: 10px; }
+        .switch-btn { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(37,99,235,0.25); text-decoration: none; display: inline-block; }
+        .switch-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.35); }
+        .update-info { font-size: 12px; color: #9CA3AF; }
+
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s ease; white-space: nowrap; }
+        .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .btn-primary { background: #111827; color: #fff; }
+        .btn-primary:hover { background: #374151; box-shadow: 0 2px 8px rgba(17,24,39,.25); }
+        .btn-primary:disabled { background: #D1D5DB; cursor: not-allowed; box-shadow: none; }
+        .btn-secondary { background: #fff; color: #374151; border: 1px solid #D1D5DB; }
+        .btn-secondary:hover { background: #F9FAFB; border-color: #9CA3AF; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+        .btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
+
+        .card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06); margin-bottom: 28px; }
+        .card-header { padding: 18px 24px; border-bottom: 1px solid #F3F4F6; display: flex; align-items: center; gap: 10px; }
+        .card-header h2 { font-size: 17px; font-weight: 600; color: #111827; }
+        .card-header .fund-count { font-size: 12px; color: #9CA3AF; background: #F3F4F6; padding: 2px 8px; border-radius: 9999px; font-weight: 500; }
+        .card-body { padding: 0; }
+
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; table-layout: auto; border-collapse: collapse; font-size: 14px; }
+        thead { position: sticky; top: 0; z-index: 10; }
+        thead::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #E5E7EB; }
+        th { padding: 11px 10px; text-align: center; font-weight: 600; font-size: 12px; letter-spacing: .04em; color: #6B7280; background: #FFFFFF; cursor: pointer; user-select: none; white-space: nowrap; transition: color .15s; }
+        th:hover { color: #111827; }
+        th .sort-icon { display: inline-block; margin-left: 3px; color: #D1D5DB; font-size: 11px; vertical-align: middle; }
+        th.sort-asc .sort-icon, th.sort-desc .sort-icon { color: #6366F1; }
+        td { padding: 11px 10px; text-align: center; border-bottom: 1px solid #F3F4F6; white-space: nowrap; vertical-align: middle; }
+        tbody tr { transition: background .12s; }
+        tbody tr:hover { background: #F8FAFC; }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .col-index { width: 56px; min-width: 56px; }
+        .col-index span { color: #9CA3AF; font-size: 13px; }
+        .col-code { width: 72px; min-width: 72px; }
+        .col-code span { font-family: "SF Mono", "Fira Code", "Consolas", monospace; color: #9CA3AF; font-size: 13px; font-weight: 500; }
+        .col-name { width: 100%; min-width: 280px; }
+        .col-name td { text-align: left !important; }
+        .col-name a { display: block; color: #111827; text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .col-name a:hover { color: #6366F1; }
+        .col-type { width: 60px; min-width: 60px; }
+        .col-return1y { width: 100px; min-width: 100px; }
+        .col-netreturn { width: 110px; min-width: 110px; }
+        .col-status { width: 160px; min-width: 160px; }
+        .col-fee-col { width: 1%; min-width: 76px; white-space: nowrap; }
+        .col-return { font-variant-numeric: tabular-nums; font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-weight: 600; font-size: 13px; }
+        .col-return .pos { color: #DC2626; }
+        .col-return .neg { color: #059669; }
+        .col-fee-weak { color: #9CA3AF; font-size: 12px; font-variant-numeric: tabular-nums; }
+        .col-fee-total { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; color: #374151; }
+
+        .status-cell { text-align: center !important; padding: 10px 8px; }
+        .badge-group { display: inline-flex; flex-direction: column; align-items: center; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #FFFFFF; letter-spacing: .02em; }
+        .badge-danger { background: #EF4444; }
+        .badge-warning { background: #F59E0B; }
+        .badge-success { background: #10B981; }
+        .badge-info { background: #3B82F6; }
+        .badge-default { background: #6B7280; }
+        .badge-limit { display: block; font-size: 11px; color: #9CA3AF; margin-top: 4px; white-space: nowrap; }
+
+        .loading-box { display: flex; align-items: center; justify-content: center; padding: 48px; color: #9CA3AF; font-size: 14px; gap: 10px; }
+        .spinner { width: 20px; height: 20px; border: 2px solid #E5E7EB; border-top-color: #6366F1; border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .type-pill { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .type-a { background: #EEF2FF; color: #4338CA; }
+        .type-c { background: #FEF3C7; color: #92400E; }
+
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .header-right { width: 100%; align-items: flex-start; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; justify-content: center; }
+            .card-header { padding: 14px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1 class="header-title">限购查询</h1>
+                <span class="header-badge">🔒 基金限购</span>
+            </div>
+            <div class="header-right">
+                <div class="update-info" id="updateTime">加载中...</div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="exportAllData()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        导出数据
+                    </button>
+                    <a href="index.html" class="switch-btn">返回主页</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>纳斯达克100</h2>
+                <span class="fund-count" id="nasdaqCount">-</span>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="loading-box"><div class="spinner"></div>正在加载基金数据...</div>
+                <div class="table-scroll" id="nasdaqTableWrap" style="display:none;">
+                    <table id="fundTable">
+                        <thead>
+                            <tr>
+                                <th data-col="index" class="col-index">序号<span class="sort-icon">⇅</span></th>
+                                <th data-col="code" class="col-code">代码<span class="sort-icon">⇅</span></th>
+                                <th data-col="name" class="col-name">基金名称<span class="sort-icon">⇅</span></th>
+                                <th data-col="type" class="col-type">类型<span class="sort-icon">⇅</span></th>
+                                <th data-col="return1y" class="col-return1y">近1年<span class="sort-icon">⇅</span></th>
+                                <th data-col="netReturn" class="col-netreturn sort-desc">近一年收益<span class="sort-icon">⇅</span></th>
+                                <th data-col="status" class="col-status">交易状态<span class="sort-icon">⇅</span></th>
+                                <th data-col="purchaseFee" class="col-fee-col">购买手续费<span class="sort-icon">⇅</span></th>
+                                <th data-col="mgmtFee" class="col-fee-col">管理费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="custodyFee" class="col-fee-col">托管费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="salesFee" class="col-fee-col">销售服务费<span class="sort-icon">⇅</span></th>
+                                <th data-col="totalFee" class="col-fee-col">合计费率<span class="sort-icon">⇅</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="fundTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>标普500</h2>
+                <span class="fund-count" id="sp500Count">-</span>
+            </div>
+            <div class="card-body">
+                <div id="sp500Loading" class="loading-box"><div class="spinner"></div>正在加载基金数据...</div>
+                <div class="table-scroll" id="sp500TableWrap" style="display:none;">
+                    <table id="sp500FundTable">
+                        <thead>
+                            <tr>
+                                <th data-col="index" class="col-index">序号<span class="sort-icon">⇅</span></th>
+                                <th data-col="code" class="col-code">代码<span class="sort-icon">⇅</span></th>
+                                <th data-col="name" class="col-name">基金名称<span class="sort-icon">⇅</span></th>
+                                <th data-col="type" class="col-type">类型<span class="sort-icon">⇅</span></th>
+                                <th data-col="return1y" class="col-return1y">近1年<span class="sort-icon">⇅</span></th>
+                                <th data-col="netReturn" class="col-netreturn sort-desc">近一年收益<span class="sort-icon">⇅</span></th>
+                                <th data-col="status" class="col-status">交易状态<span class="sort-icon">⇅</span></th>
+                                <th data-col="purchaseFee" class="col-fee-col">购买手续费<span class="sort-icon">⇅</span></th>
+                                <th data-col="mgmtFee" class="col-fee-col">管理费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="custodyFee" class="col-fee-col">托管费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="salesFee" class="col-fee-col">销售服务费<span class="sort-icon">⇅</span></th>
+                                <th data-col="totalFee" class="col-fee-col">合计费率<span class="sort-icon">⇅</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="sp500FundTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var funds = [];
+        var sp500Funds = [];
+        var sortState = { table: null, col: 'netReturn', dir: 'desc' };
+
+        function parsePercent(str) {
+            if (!str || str === 'N/A' || str === '-') return 0;
+            return parseFloat(str.replace('%', '')) || 0;
+        }
+        function getNetReturnNumeric(y, f) { return parsePercent(y) - parsePercent(f); }
+        function getReturnNumeric(r) { return (!r || r === 'N/A' || r === '-') ? -99999 : (parseFloat(r.replace('%','')) || -99999); }
+
+        function getStatusBadge(statusText) {
+            if (!statusText || statusText === 'N/A') {
+                return '<div class="badge-group"><span class="badge badge-default">未知</span></div>';
+            }
+            var mainText = statusText;
+            var limitText = '';
+            var bracketMatch = statusText.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
+            if (bracketMatch) {
+                mainText = statusText.replace(bracketMatch[0], '').trim();
+                limitText = bracketMatch[0];
+            }
+            var badgeClass = 'badge-default';
+            if (mainText.indexOf('暂停申购') !== -1) {
+                badgeClass = 'badge-danger';
+            } else if (bracketMatch) {
+                var limit = parseFloat(bracketMatch[1]);
+                if (bracketMatch[2] === '万') limit = limit * 10000;
+                if (limit < 100) badgeClass = 'badge-danger';
+                else if (limit < 1000) badgeClass = 'badge-warning';
+                else badgeClass = 'badge-success';
+            } else if (mainText.indexOf('正常') !== -1 || mainText.indexOf('开放') !== -1) {
+                badgeClass = 'badge-success';
+            } else {
+                badgeClass = 'badge-info';
+            }
+            var html = '<div class="badge-group"><span class="badge ' + badgeClass + '">' + mainText + '</span>';
+            if (limitText) html += '<span class="badge-limit">' + limitText + '</span>';
+            html += '</div>';
+            return html;
+        }
+
+        function getTypePill(type) {
+            return type === 'C'
+                ? '<span class="type-pill type-c">C</span>'
+                : '<span class="type-pill type-a">A</span>';
+        }
+
+        function formatNetReturn(y, f) {
+            var net = (parsePercent(y) - parsePercent(f)).toFixed(2);
+            var cls = net >= 0 ? 'pos' : 'neg';
+            return '<span class="' + cls + '">' + (net >= 0 ? '+' : '') + net + '%</span>';
+        }
+
+        function sortFunds(list, col, dir) {
+            return list.slice().sort(function(a, b) {
+                var av, bv;
+                switch(col) {
+                    case 'index': return 0;
+                    case 'code': av=a['基金代码']; bv=b['基金代码']; break;
+                    case 'name': av=a['基金名称']; bv=b['基金名称']; break;
+                    case 'type': av=a['类型']; bv=b['类型']; break;
+                    case 'return1y': av=getReturnNumeric(a['近1年']); bv=getReturnNumeric(b['近1年']); break;
+                    case 'netReturn': av=getNetReturnNumeric(a['近1年'],a['合计费率']); bv=getNetReturnNumeric(b['近1年'],b['合计费率']); break;
+                    case 'status': av=a['交易状态']; bv=b['交易状态']; break;
+                    case 'purchaseFee': av=parsePercent(a['购买手续费']); bv=parsePercent(b['购买手续费']); break;
+                    case 'mgmtFee': av=parsePercent(a['管理费率']); bv=parsePercent(b['管理费率']); break;
+                    case 'custodyFee': av=parsePercent(a['托管费率']); bv=parsePercent(b['托管费率']); break;
+                    case 'salesFee': av=parsePercent(a['销售服务费']); bv=parsePercent(b['销售服务费']); break;
+                    case 'totalFee': av=parsePercent(a['合计费率']); bv=parsePercent(b['合计费率']); break;
+                    default: return 0;
+                }
+                if (typeof av === 'number') return dir === 'asc' ? av - bv : bv - av;
+                return dir === 'asc' ? String(av).localeCompare(String(bv),'zh') : String(bv).localeCompare(String(av),'zh');
+            });
+        }
+
+        function renderTable(tableId, tbodyId, list, isDefault, countId, wrapId) {
+            document.getElementById(wrapId).style.display = 'none';
+            document.getElementById(tableId === 'fundTable' ? 'loading' : 'sp500Loading').style.display = 'none';
+
+            var sorted = list;
+            if (isDefault) sorted = sortFunds(list, 'netReturn', 'desc');
+            else if (sortState.table === tableId) sorted = sortFunds(list, sortState.col, sortState.dir);
+
+            var el = document.getElementById(countId);
+            if (el) el.textContent = sorted.length + ' 只基金';
+
+            var tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+
+            sorted.forEach(function(f, i) {
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td class="col-index"><span>' + (i+1) + '</span></td>' +
+                    '<td class="col-code"><span>' + f['基金代码'] + '</span></td>' +
+                    '<td class="col-name"><a href="' + f['链接'] + '" target="_blank" title="' + f['基金名称'] + '">' + f['基金名称'] + '</a></td>' +
+                    '<td class="col-type">' + getTypePill(f['类型']) + '</td>' +
+                    '<td class="col-return col-return1y">' + (f['近1年'] || '-') + '</td>' +
+                    '<td class="col-return col-netreturn">' + formatNetReturn(f['近1年'], f['合计费率']) + '</td>' +
+                    '<td class="status-cell">' + getStatusBadge(f['交易状态']) + '</td>' +
+                    '<td class="col-fee-col col-fee-weak">' + (f['购买手续费'] || '-') + '</td>' +
+                    '<td class="col-fee-col col-fee-weak">' + (f['管理费率'] || '-') + '</td>' +
+                    '<td class="col-fee-col col-fee-weak">' + (f['托管费率'] || '-') + '</td>' +
+                    '<td class="col-fee-col col-fee-weak">' + (f['销售服务费'] || '-') + '</td>' +
+                    '<td class="col-fee-col col-fee-total">' + (f['合计费率'] || '-') + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById(wrapId).style.display = 'block';
+        }
+
+        function renderFunds(d) { renderTable('fundTable','fundTableBody',funds,d,'nasdaqCount','nasdaqTableWrap'); }
+        function renderSp500Funds(d) { renderTable('sp500FundTable','sp500FundTableBody',sp500Funds,d,'sp500Count','sp500TableWrap'); }
+
+        function setupSortHandlers() {
+            document.querySelectorAll('#fundTable th[data-col]').forEach(function(th) {
+                th.addEventListener('click', function() { handleSort('fundTable','fundTableBody',this.getAttribute('data-col'),funds); });
+            });
+            document.querySelectorAll('#sp500FundTable th[data-col]').forEach(function(th) {
+                th.addEventListener('click', function() { handleSort('sp500FundTable','sp500FundTableBody',this.getAttribute('data-col'),sp500Funds); });
+            });
+        }
+
+        function handleSort(tid, tbid, col, list) {
+            var th = document.querySelector('#' + tid + ' th[data-col="' + col + '"]');
+            document.querySelectorAll('#' + tid + ' th').forEach(function(t) { t.className = ''; });
+            if (sortState.table === tid && sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+            else { sortState.table = tid; sortState.col = col; sortState.dir = 'desc'; }
+            th.className = sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc';
+            if (tid === 'fundTable') renderFunds(false); else renderSp500Funds(false);
+        }
+
+        function updateFundData() {
+            var btn = document.querySelector('.btn-primary');
+            var t = document.getElementById('updateTime');
+            if (!window.electronAPI) {
+                t.textContent = '请通过桌面应用访问';
+                t.style.color = '#EF4444';
+                return;
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> 更新中...';
+            t.textContent = '正在抓取数据中...';
+            t.style.color = '#F59E0B';
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('nasdaqTableWrap').style.display = 'none';
+            document.getElementById('sp500Loading').style.display = 'flex';
+            document.getElementById('sp500TableWrap').style.display = 'none';
+
+            window.electronAPI.updateFundData()
+                .then(function(r) {
+                    checkCrawlStatus(btn);
+                })
+                .catch(function() {
+                    t.textContent = '数据更新失败';
+                    t.style.color = '#EF4444';
+                    loadExistingData(btn);
+                });
+        }
+
+        function checkCrawlStatus(btn) {
+            var t = document.getElementById('updateTime');
+            var iv = setInterval(function() {
+                window.electronAPI.getFundUpdateStatus()
+                    .then(function(s) {
+                        if (!s.is_running) {
+                            clearInterval(iv);
+                            if (s.last_result === 'success') {
+                                t.textContent = '数据更新完成，正在加载...';
+                                t.style.color = '#10B981';
+                                loadExistingData(btn);
+                            } else {
+                                t.textContent = '数据更新失败：' + (s.message || '未知错误');
+                                t.style.color = '#EF4444';
+                                loadExistingData(btn);
+                            }
+                        } else {
+                            t.textContent = '正在抓取数据中... ' + (s.message || '');
+                            t.style.color = '#F59E0B';
+                        }
+                    })
+                    .catch(function() { clearInterval(iv); loadExistingData(btn); });
+            }, 2000);
+        }
+
+        function loadExistingData(btn) {
+            var t = document.getElementById('updateTime');
+            var fetchPromise;
+            if (window.electronAPI && window.electronAPI.getFundData) {
+                fetchPromise = window.electronAPI.getFundData()
+                    .then(function(result) {
+                        if (result.success && result.data) return result.data;
+                        throw new Error(result.message || '获取失败');
+                    });
+            } else {
+                fetchPromise = fetch('real_fund_data.json?t=' + Date.now())
+                    .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+            }
+
+            fetchPromise
+                .then(function(data) {
+                    funds.length = 0; sp500Funds.length = 0;
+                    data.forEach(function(f) {
+                        var o = {
+                            "基金代码": f['基金代码'], "基金名称": f['基金名称'], "类型": f['类型'],
+                            "交易状态": f['交易状态'], "购买手续费": f['购买手续费'],
+                            "管理费率": f['管理费率'], "托管费率": f['托管费率'],
+                            "销售服务费": f['销售服务费'], "合计费率": f['合计费率'],
+                            "近1年": f['近1年'], "链接": f['链接']
+                        };
+                        if (f['分类'] === 'nasdaq') funds.push(o);
+                        else if (f['分类'] === 'sp500') sp500Funds.push(o);
+                    });
+                    renderFunds(true); renderSp500Funds(true); setupSortHandlers();
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 更新数据'; }
+                    var n = new Date();
+                    t.textContent = '最后更新：' + n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0') + ' ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+                    t.style.color = '#9CA3AF';
+                })
+                .catch(function() {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 更新数据'; }
+                    t.textContent = '数据加载失败'; t.style.color = '#EF4444';
+                    renderFunds(true); renderSp500Funds(true); setupSortHandlers();
+                });
+        }
+
+        function exportAllData() {
+            var all = [].concat(funds, sp500Funds);
+            var csv = '\uFEFF序号,基金代码,基金名称,类型,近1年,近一年收益,交易状态,购买手续费,管理费率,托管费率,销售服务费,合计费率,链接\n';
+            all.forEach(function(f, i) {
+                var net = (parsePercent(f['近1年']) - parsePercent(f['合计费率'])).toFixed(2) + '%';
+                csv += (i+1) + ',' + f['基金代码'] + ',"' + f['基金名称'] + '",' + (f['类型']||'A') + ',' + (f['近1年']||'-') + ',' + net + ',"' + f['交易状态'] + '",' + (f['购买手续费']||'-') + ',' + (f['管理费率']||'-') + ',' + (f['托管费率']||'-') + ',' + (f['销售服务费']||'-') + ',' + (f['合计费率']||'-') + ',' + f['链接'] + '\n';
+            });
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '美股场外基金数据_' + new Date().toISOString().slice(0,10) + '.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        window.onload = function() { loadExistingData(); };
+    </script>
+</body>
+</html>

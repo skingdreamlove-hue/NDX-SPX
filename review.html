@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复盘进化 - 美股情绪监测</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            background-color: #F9FAFB;
+            color: #111827;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            gap: 24px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+            margin: 0;
+        }
+        .header-badge {
+            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .switch-btn {
+            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+            text-decoration: none;
+            display: inline-block;
+        }
+        .switch-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37,99,235,0.35);
+        }
+        .dashboard-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .panel-toggle {
+            font-size: 20px;
+        }
+        .panel-content {
+            display: block;
+        }
+        .statgrid-4 {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .statgrid-4 .stat-card {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+            border-radius: 12px;
+            padding: 16px 10px;
+            text-align: center;
+            border: 1px solid #E5E7EB;
+            position: relative;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6B7280;
+            margin-bottom: 6px;
+        }
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+        .stat-sub {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+        .stat-formula {
+            font-size: 11px;
+            color: #9CA3AF;
+            margin-top: 4px;
+        }
+        .signal-card-tip {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            color: #6B7280;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 18px;
+            cursor: help;
+        }
+        .signal-card-tip .signal-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 130%;
+            right: 0;
+            background: #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 400;
+            white-space: normal;
+            z-index: 100;
+            max-width: 280px;
+        }
+        .signal-card-tip:hover .signal-tooltip {
+            display: block;
+        }
+        .chart-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        canvas {
+            width: 100%;
+            height: 280px;
+        }
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .bar-chart-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .bar-chart-title {
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .bar-label {
+            width: 140px;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .bar-wrapper {
+            flex-grow: 1;
+            height: 24px;
+            background: #E5E7EB;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563EB, #3B82F6);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+        .bar-value {
+            width: 100px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            padding-left: 12px;
+        }
+        .bar-bottom-note {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .records-container {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .records-wrapper {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .records-title {
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .filters {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #D1D5DB;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background: #2563EB;
+            color: white;
+            border-color: #2563EB;
+        }
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .records-table th,
+        .records-table td {
+            padding: 10px;
+            border-bottom: 1px solid #E5E7EB;
+            text-align: left;
+        }
+        .records-table th {
+            color: #6B7280;
+            font-weight: 600;
+            background: #F9FAFB;
+        }
+        .records-table .col-date {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 2;
+            width: 120px;
+            min-width: 120px;
+        }
+        .records-table .col-sentiment {
+            position: sticky;
+            left: 120px;
+            background: white;
+            z-index: 2;
+            width: 80px;
+            min-width: 80px;
+        }
+        .records-table thead th.col-date,
+        .records-table thead th.col-sentiment {
+            background: #F9FAFB;
+            z-index: 3;
+        }
+        .records-table td.col-date {
+            background: #fff;
+            z-index: 1;
+        }
+        .records-table td.col-sentiment {
+            background: #fff;
+            z-index: 1;
+        }
+        .records-table td {
+            white-space: nowrap;
+        }
+        .emotion-neutral { color: #9CA3AF; }
+        .emotion-panic { color: #F59E0B; }
+        .emotion-extreme-panic { color: #DC2626; }
+        .emotion-greed { color: #6EE7B7; }
+        .emotion-extreme-greed { color: #10B981; }
+        .return-positive { color: #059669; }
+        .return-negative { color: #DC2626; }
+        .return-placeholder { color: #9CA3AF; }
+        .verify-na { color: #9CA3AF; }
+        .accuracy-good { color: #059669; font-weight: 700; }
+        .accuracy-medium { color: #D97706; }
+        .accuracy-bad { color: #DC2626; }
+        .accuracy-placeholder { color: #9CA3AF; }
+        .tag {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .tag.correct {
+            background: #D1FAE5;
+            color: #064E3B;
+        }
+        .tag.wrong {
+            background: #FEE2E2;
+            color: #7F1D1D;
+        }
+        .tag.neutral {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        .tag.pending {
+            background: #FEF3C7;
+            color: #78350F;
+        }
+        .bottom-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+        .gemini-btn {
+            background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+        }
+        .gemini-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16,185,129,0.35);
+        }
+        .gemini-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .gemini-settings-btn {
+            background: #F3F4F6;
+            border: 1px solid #D1D5DB;
+            color: #6B7280;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .gemini-settings-btn:hover {
+            background: #E5E7EB;
+            color: #374151;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 28px 24px 24px;
+            width: 480px;
+            max-width: 92vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 24px 0;
+            color: #111827;
+        }
+        .modal-field {
+            margin-bottom: 20px;
+        }
+        .modal-field-label {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-field-label .required-star {
+            color: #E53E3E;
+            margin-right: 4px;
+        }
+        .modal-field-link {
+            font-size: 12px;
+            color: #4A90E2;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-field-link:hover {
+            text-decoration: underline;
+        }
+        .modal-field-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 2px rgba(74,144,226,0.1);
+        }
+        .modal-input.error {
+            border-color: #E53E3E;
+        }
+        .modal-input:disabled {
+            background: #F5F5F5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .modal-input-error {
+            font-size: 12px;
+            color: #E53E3E;
+            margin-top: 4px;
+            display: none;
+        }
+        .modal-input-error.show {
+            display: block;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #EEE;
+        }
+        .modal-btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .modal-btn-save {
+            background: #333;
+            color: white;
+        }
+        .modal-btn-save:hover {
+            background: #1a1a1a;
+        }
+        .modal-btn-clear {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        .modal-btn-clear:hover {
+            background: #F5F5F5;
+        }
+        .modal-toast {
+            display: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 12px;
+            text-align: center;
+        }
+        .modal-toast.success {
+            display: block;
+            background: #F0FDF4;
+            color: #166534;
+            border: 1px solid #BBF7D0;
+        }
+        .modal-toast.info {
+            display: block;
+            background: #EFF6FF;
+            color: #1E40AF;
+            border: 1px solid #BFDBFE;
+        }
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #999;
+            color: #999;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: help;
+            margin-left: 4px;
+            position: relative;
+        }
+        .info-icon .tooltip-text {
+            display: none;
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            font-weight: 400;
+        }
+        .info-icon:hover .tooltip-text {
+            display: block;
+        }
+        .suggestions-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+        }
+        .suggestions-panel.active {
+            display: block;
+        }
+        .gemini-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .gemini-result-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .gemini-result-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-copy {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #D1D5DB;
+            background: #F9FAFB;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-copy:hover {
+            background: #E5E7EB;
+        }
+        .btn-copy.copied {
+            background: #D1FAE5;
+            border-color: #6EE7B7;
+            color: #064E3B;
+        }
+        .btn-adopt {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #059669;
+            background: #059669;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-adopt:hover {
+            background: #047857;
+            border-color: #047857;
+        }
+        .btn-adopt.adopted {
+            background: #D1FAE5;
+            border-color: #6EE7B7;
+            color: #064E3B;
+        }
+        .btn-reject {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #D1D5DB;
+            background: #F9FAFB;
+            color: #6B7280;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-reject:hover {
+            background: #F3F4F6;
+            border-color: #9CA3AF;
+        }
+        .btn-reject.adopted {
+            background: #E5E7EB;
+            border-color: #D1D5DB;
+            color: #9CA3AF;
+        }
+        .disabled-btn {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .summary-col {
+            word-break: break-all;
+        }
+        .gemini-result-content {
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .gemini-result-error {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .gemini-error-title {
+            color: #991B1B;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .gemini-error-detail {
+            color: #B91C1C;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .gemini-error-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: #DC2626;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .gemini-error-btn:hover {
+            background: #B91C1C;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #2563EB;
+            color: white;
+        }
+        .btn-secondary {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        @media (max-width: 1024px) {
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+            .statgrid-4 {
+                flex-wrap: wrap;
+            }
+            .statgrid-4 .stat-card {
+                flex: 1 1 calc(33.333% - 10px);
+                min-width: 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1 class="header-title">复盘进化</h1>
+                <span class="header-badge">准确率看板</span>
+            </div>
+            <div class="header-right">
+                <a href="index.html" class="switch-btn">返回主页面</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <div class="panel-title">📊 实时准确率看板</div>
+                <div class="panel-toggle">▼</div>
+            </div>
+            <div class="panel-content">
+                <div class="statgrid-4">
+                    <div class="stat-card">
+                        <div class="stat-label">5日准确率</div>
+                        <div class="stat-value" id="stat-5d">--</div>
+                        <div class="stat-sub" id="stat-5d-sub">暂无数据</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">10日准确率</div>
+                        <div class="stat-value" id="stat-10d">--</div>
+                        <div class="stat-sub" id="stat-10d-sub">暂无数据</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">20日准确率</div>
+                        <div class="stat-value" id="stat-20d">--</div>
+                        <div class="stat-sub" id="stat-20d-sub">暂无数据</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">综合准确率</div>
+                        <div class="stat-value" id="stat-overall">--</div>
+                        <div class="stat-sub" id="stat-overall-sub">数据积累中</div>
+                    </div>
+                    <div class="stat-card" id="signal-card">
+                        <div class="stat-label">多空信号准确率</div>
+                        <div class="stat-value" id="stat-signal">--</div>
+                        <div class="stat-sub" id="stat-signal-sub">暂无有效信号</div>
+                        <div class="signal-card-tip">ⓘ<span class="signal-tooltip">仅统计恐慌/贪婪信号的预测准确率，中性信号不纳入计算</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">运行天数</div>
+                        <div class="stat-value" id="stat-days">0</div>
+                        <div class="stat-sub">天</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+                
+                <div class="two-col-grid">
+                    <div class="bar-chart-container">
+                        <div class="bar-chart-title">各情绪级别命中率</div>
+                        <div id="emotion-bars"></div>
+                        <div class="bar-bottom-note" id="emotion-bottom-note"></div>
+                    </div>
+                    <div class="bar-chart-container">
+                        <div class="bar-chart-title">各指标触发贡献度</div>
+                        <div id="indicator-bars"></div>
+                        <div class="bar-bottom-note" id="indicator-bottom-note"></div>
+                    </div>
+                </div>
+                
+                <div class="records-container" style="margin-bottom:20px;">
+                    <div class="records-title">
+                        <span>复盘记录</span>
+                    </div>
+                    <div class="records-wrapper">
+                    <table class="records-table">
+                        <thead>
+                            <tr>
+                                <th style="width:15%;">复盘日期</th>
+                                <th style="width:15%;">分析结果</th>
+                                <th style="width:15%;">操作</th>
+                                <th style="width:55%;">备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="review-history-tbody">
+                            <tr><td colspan="4" style="text-align:center;color:#9CA3AF">暂无复盘记录</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <div class="records-container">
+                    <div class="records-title">
+                        <span>最近信号记录</span>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="all">全部</button>
+                            <button class="filter-btn" data-filter="signal">买卖信号</button>
+                            <button class="filter-btn" data-filter="wrong">误判</button>
+                            <button class="filter-btn" data-filter="pending">待验证</button>
+                        </div>
+                    </div>
+                    <div class="records-wrapper">
+                    <table class="records-table">
+                        <thead>
+                            <tr>
+                                <th class="col-date">日期</th>
+                                <th class="col-sentiment">情绪</th>
+                                <th class="col-ndx">NDX 5日</th>
+                                <th class="col-spx">SPX 5日</th>
+                                <th class="col-ndx">NDX 10日</th>
+                                <th class="col-spx">SPX 10日</th>
+                                <th class="col-ndx">NDX 20日</th>
+                                <th class="col-spx">SPX 20日</th>
+                                <th class="col-verify">5日验证</th>
+                                <th class="col-verify">10日验证</th>
+                                <th class="col-verify">20日验证</th>
+                                <th class="col-accuracy">准确率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="records-tbody"></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-actions">
+            <button id="geminiBtn" class="gemini-btn" onclick="requestGeminiSuggestions()">让 Gemini 分析误判规律并给出优化建议 ↗</button>
+            <button id="geminiSettingsBtn" class="gemini-settings-btn" onclick="showGeminiSettings()" title="配置 API Key">⚙</button>
+        </div>
+        
+        <div class="suggestions-panel" id="suggestionsPanel">
+            <div class="gemini-result-header">
+                <h3 class="gemini-result-title">✨ Gemini 优化建议</h3>
+                <div class="gemini-result-actions" id="geminiResultActions">
+                    <button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()">复制全文</button>
+                    <button class="btn btn-secondary" onclick="closeSuggestions()">关闭</button>
+                </div>
+            </div>
+            <div id="geminiErrorArea"></div>
+            <div class="gemini-result-content" id="geminiResultContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="geminiKeyModal">
+        <div class="modal-content">
+            <h3 class="modal-title">配置 Gemini 模型</h3>
+
+            <div class="modal-field">
+                <div class="modal-field-label">
+                    <span><span class="required-star">*</span>服务商</span>
+                </div>
+                <input type="text" class="modal-input" value="Google" disabled>
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label">
+                    <span><span class="required-star">*</span>模型 ID</span>
+                    <a class="modal-field-link" href="https://ai.google.dev/gemini-api/docs/models" target="_blank">前往 Google AI Studio 查询</a>
+                </div>
+                <input type="text" id="geminiModelIdInput" class="modal-input" placeholder="例如 gemini-1.5-flash 或 gemini-2.0-flash">
+                <div class="modal-input-error" id="modelIdError">必填</div>
+                <div class="modal-field-hint">模型停用时可在此更换，当前可用：gemini-2.0-flash / gemini-1.5-flash / gemini-2.5-pro</div>
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label">
+                    <span><span class="required-star">*</span>API 密钥</span>
+                    <a class="modal-field-link" href="https://aistudio.google.com/app/apikey" target="_blank">获取 API 密钥</a>
+                </div>
+                <input type="password" id="geminiKeyInput" class="modal-input" placeholder="输入你的 Gemini API 密钥">
+                <div class="modal-input-error" id="apiKeyError">必填</div>
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label">
+                    <span>自定义请求地址（选填）
+                        <span class="info-icon">ⓘ<span class="tooltip-text">留空则使用 Google 官方接口地址，如需代理可填入自定义地址</span></span>
+                    </span>
+                </div>
+                <input type="text" id="geminiBaseUrlInput" class="modal-input" placeholder="例如 https://generativelanguage.googleapis.com/v1beta">
+            </div>
+
+            <div class="modal-toast" id="modalToast"></div>
+
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-clear" onclick="clearGeminiConfig()">清除配置</button>
+                <button class="modal-btn modal-btn-save" onclick="saveGeminiConfig()">保存配置</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script src="daily_log.js"></script>
+    <script>
+        let dailyLogData = [];
+        let signalRecords = [];
+        let reviewSummary = null;
+        let chartInstance = null;
+        let currentFilter = 'all';
+        let lastSuggestions = null;
+        let geminiFullResult = null;
+        let geminiParsedResult = null;
+        
+        window.onload = function() {
+            loadDailyLog();
+            loadGeminiConfigFromStorage();
+            loadReviewHistory();
+        };
+
+        function loadGeminiConfigFromStorage() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            const savedModel = localStorage.getItem('gemini_model_id');
+            const savedBaseUrl = localStorage.getItem('gemini_base_url');
+            if (savedKey) {
+                document.getElementById('geminiKeyInput').value = savedKey;
+            }
+            if (savedModel) {
+                document.getElementById('geminiModelIdInput').value = savedModel;
+            }
+            if (savedBaseUrl) {
+                document.getElementById('geminiBaseUrlInput').value = savedBaseUrl;
+            }
+        }
+        
+        async function waitForFlaskReady(maxRetries = 10, interval = 1500) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const baseUrl = await getApiBaseUrl();
+                    const res = await fetch(`${baseUrl}/api/review-data`, { signal: AbortSignal.timeout(3000) });
+                    if (res.ok) return baseUrl;
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, interval));
+            }
+            return null;
+        }
+
+        async function loadDailyLog() {
+            if (typeof DAILY_LOG_DATA !== 'undefined') {
+                dailyLogData = DAILY_LOG_DATA;
+            }
+            try {
+                const baseUrl = await waitForFlaskReady();
+                if (baseUrl) {
+                    const res = await fetch(`${baseUrl}/api/review-data`);
+                    const data = await res.json();
+                    reviewSummary = data.summary;
+                    signalRecords = data.signal_records || [];
+                }
+            } catch (e) {}
+            updateDashboard();
+        }
+        
+        function updateDashboard() {
+            if (!dailyLogData || !dailyLogData.length) {
+                return;
+            }
+
+            if (reviewSummary) {
+                setAccuracyValue('stat-5d', reviewSummary.accuracy_5d, reviewSummary.verified_count);
+                document.getElementById('stat-5d-sub').textContent = reviewSummary.accuracy_5d !== '--'
+                    ? `已验证 ${reviewSummary.verified_count} 条`
+                    : '暂无数据';
+
+                setAccuracyValue('stat-overall', reviewSummary.overall_accuracy, reviewSummary.verified_count);
+                document.getElementById('stat-overall-sub').textContent = reviewSummary.overall_accuracy !== '--'
+                    ? `基于 ${reviewSummary.verified_count + reviewSummary.verified_10d + reviewSummary.verified_20d} 条验证`
+                    : '数据积累中';
+
+                setAccuracyValue('stat-signal', reviewSummary.signal_accuracy, reviewSummary.signal_verified);
+                if (reviewSummary.signal_accuracy !== '--') {
+                    document.getElementById('stat-signal-sub').textContent = `共${reviewSummary.signal_total}次信号 已验证${reviewSummary.signal_verified}次（${reviewSummary.signal_basis}）`;
+                } else {
+                    document.getElementById('stat-signal-sub').textContent = '暂无有效信号';
+                }
+            } else {
+                const verified = dailyLogData.filter(x => x.verify_5d && x.verify_5d.status === 'verified');
+                const correct = verified.filter(x => x.verify_5d.result === 'correct');
+                const overallAccuracy = verified.length >= 5 ? Math.round((correct.length / verified.length) * 100) : null;
+
+                document.getElementById('stat-5d').textContent = '--';
+                document.getElementById('stat-5d-sub').textContent = '暂无数据';
+
+                if (overallAccuracy !== null) {
+                    document.getElementById('stat-overall').textContent = overallAccuracy + '%';
+                    document.getElementById('stat-overall-sub').textContent = `基于 ${verified.length} 条验证`;
+                } else {
+                    document.getElementById('stat-overall').textContent = '--';
+                    document.getElementById('stat-overall-sub').textContent = `数据积累中 (${verified.length}条)`;
+                }
+
+                document.getElementById('stat-signal').textContent = '--';
+                document.getElementById('stat-signal-sub').textContent = '暂无有效信号';
+            }
+
+            const uniqueDates = [...new Set(dailyLogData.map(x => x.date))].sort();
+            document.getElementById('stat-days').textContent = uniqueDates.length;
+            
+            renderEmotionBars();
+            renderIndicatorBars();
+            renderRecordsTable();
+            renderAccuracyChart();
+
+            if (reviewSummary) {
+                setAccuracyValue('stat-10d', reviewSummary.accuracy_10d, reviewSummary.verified_10d);
+                document.getElementById('stat-10d-sub').textContent = reviewSummary.accuracy_10d !== '--'
+                    ? `已验证 ${reviewSummary.verified_10d} 条`
+                    : '暂无数据';
+                setAccuracyValue('stat-20d', reviewSummary.accuracy_20d, reviewSummary.verified_20d);
+                document.getElementById('stat-20d-sub').textContent = reviewSummary.accuracy_20d !== '--'
+                    ? `已验证 ${reviewSummary.verified_20d} 条`
+                    : '暂无数据';
+            } else {
+                updateAccuracyCard('stat-10d', 'stat-10d-sub', dailyLogData, 'verify_10d');
+                updateAccuracyCard('stat-20d', 'stat-20d-sub', dailyLogData, 'verify_20d');
+            }
+        }
+
+        function setAccuracyValue(elementId, accuracyStr, verifiedCount) {
+            const el = document.getElementById(elementId);
+            el.textContent = accuracyStr;
+            if (accuracyStr === '--' || verifiedCount === 0) {
+                el.style.color = '#111827';
+                return;
+            }
+            const val = parseFloat(accuracyStr);
+            if (val >= 65) {
+                el.style.color = '#059669';
+            } else if (val >= 50) {
+                el.style.color = '#D97706';
+            } else {
+                el.style.color = '#DC2626';
+            }
+        }
+
+        function updateAccuracyCard(valueId, subId, data, fieldName) {
+            const verified = data.filter(x => x[fieldName] && x[fieldName].status === 'verified');
+            const correct = verified.filter(x => x[fieldName].result === 'correct');
+            const acc = verified.length > 0 ? parseFloat((correct.length / verified.length * 100).toFixed(1)) : null;
+            const valueEl = document.getElementById(valueId);
+            const subEl = document.getElementById(subId);
+
+            if (acc !== null) {
+                valueEl.textContent = acc + '%';
+                subEl.textContent = `已验证 ${verified.length} 条`;
+                if (acc >= 65) {
+                    valueEl.style.color = '#059669';
+                } else if (acc >= 50) {
+                    valueEl.style.color = '#D97706';
+                } else {
+                    valueEl.style.color = '#DC2626';
+                }
+            } else {
+                valueEl.textContent = '--';
+                valueEl.style.color = '#111827';
+                subEl.textContent = '暂无数据';
+            }
+        }
+        
+        function renderEmotionBars() {
+            const emotions = ['极度恐慌', '恐慌', '中性', '贪婪', '极度贪婪'];
+            const emotionContainer = document.getElementById('emotion-bars');
+            const emotionStats = {};
+            emotions.forEach(emotion => emotionStats[emotion] = { total: 0, correct: 0 });
+            
+            dailyLogData.forEach(entry => {
+                const emotion = entry.signal?.emotion;
+                if (!emotion) return;
+                if (!emotionStats[emotion]) emotionStats[emotion] = { total: 0, correct: 0 };
+                emotionStats[emotion].total++;
+                if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                    emotionStats[emotion].correct++;
+                }
+            });
+            
+            let html = '';
+            emotions.forEach(emotion => {
+                const stats = emotionStats[emotion];
+                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                if (stats.total === 0) {
+                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                } else {
+                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                }
+            });
+            emotionContainer.innerHTML = html;
+            document.getElementById('emotion-bottom-note').textContent = '各情绪级别命中率统计';
+        }
+        
+        function renderIndicatorBars() {
+            const indicators = ['VIX恐慌指数', '高收益债信用利差', 'NDX高于MA200广度', 'QQQ PCR偏离', 'NDX偏离MA200', 'VIX期限结构'];
+            const indicatorContainer = document.getElementById('indicator-bars');
+            const indicatorStats = {};
+            indicators.forEach(ind => indicatorStats[ind] = { total: 0, correct: 0 });
+            
+            dailyLogData.forEach(entry => {
+                const conditions = entry.signal?.triggered_conditions || [];
+                conditions.forEach(cond => {
+                    indicators.forEach(ind => {
+                        if (cond.includes(ind) || cond.includes(ind.slice(0,4))) {
+                            indicatorStats[ind].total++;
+                            if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                                indicatorStats[ind].correct++;
+                            }
+                        }
+                    });
+                });
+            });
+            
+            let html = '';
+            let bestInd = null;
+            let bestRate = 0;
+            
+            indicators.forEach(ind => {
+                const stats = indicatorStats[ind];
+                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                if (stats.total >= 2 && rate > bestRate) {
+                    bestRate = rate;
+                    bestInd = ind;
+                }
+                
+                if (stats.total === 0) {
+                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                } else {
+                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                }
+            });
+            indicatorContainer.innerHTML = html;
+            const note = bestInd ? `最可靠指标：${bestInd} (${bestRate}% 命中率)` : '暂无足够数据';
+            document.getElementById('indicator-bottom-note').textContent = note;
+        }
+        
+        function renderAccuracyChart() {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            const verified = dailyLogData
+                .filter(x => x.verify_5d && x.verify_5d.status === 'verified')
+                .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            
+            if (verified.length < 7) {
+                document.getElementById('accuracyChart').style.display = 'none';
+                const container = document.getElementById('accuracyChart').parentElement;
+                let placeholder = container.querySelector('.chart-placeholder-msg');
+                if (!placeholder) {
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'chart-placeholder-msg';
+                    container.appendChild(placeholder);
+                }
+                placeholder.textContent = `数据积累中，至少需要7条已验证记录（当前${verified.length}条）`;
+                return;
+            }
+            
+            const placeholder = document.querySelector('.chart-placeholder-msg');
+            if (placeholder) placeholder.remove();
+            document.getElementById('accuracyChart').style.display = '';
+            
+            const labels = [];
+            const rollingAcc = [];
+            
+            for (let i = 0; i < verified.length; i++) {
+                labels.push(verified[i].date || '');
+                let correct = 0;
+                let count = 0;
+                for (let j = i; j >= 0 && count < 7; j--) {
+                    count++;
+                    if (verified[j].verify_5d.result === 'correct') correct++;
+                }
+                rollingAcc.push(count >= 7 ? Math.round((correct / count) * 100) : null);
+            }
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '7日滚动准确率',
+                            data: rollingAcc,
+                            borderColor: '#2563EB',
+                            backgroundColor: 'rgba(37,99,235,0.1)',
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#2563EB',
+                            fill: false,
+                            tension: 0.2,
+                            spanGaps: false,
+                        },
+                        {
+                            label: '50%基准线',
+                            data: labels.map(() => 50),
+                            borderColor: '#DC2626',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 16,
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                callback: v => v + '%'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.08)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 15,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function emotionClass(sentiment) {
+            const map = {
+                '中性': 'emotion-neutral',
+                '恐慌': 'emotion-panic',
+                '极度恐慌': 'emotion-extreme-panic',
+                '贪婪': 'emotion-greed',
+                '极度贪婪': 'emotion-extreme-greed'
+            };
+            return map[sentiment] || '';
+        }
+
+        function formatReturn(val) {
+            if (!val || val === '--' || val === '') return { text: '--', cls: 'return-placeholder' };
+            const s = String(val);
+            if (s.startsWith('+') || parseFloat(s) > 0) return { text: s, cls: 'return-positive' };
+            if (s.startsWith('-') || parseFloat(s) < 0) return { text: s, cls: 'return-negative' };
+            return { text: s, cls: 'return-placeholder' };
+        }
+
+        function renderVerifyCell(value) {
+            if (value === '正确') return '<span class="tag correct">正确</span>';
+            if (value === '误判') return '<span class="tag wrong">误判</span>';
+            if (value === '待验证') return '<span class="tag pending">待验证</span>';
+            return '<span class="verify-na">—</span>';
+        }
+
+        function renderAccuracyCell(value) {
+            if (!value || value === '--' || value === '') return '<span class="return-placeholder">--</span>';
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            if (num >= 65) return `<span class="accuracy-good">${value}</span>`;
+            if (num >= 50) return `<span class="accuracy-medium">${value}</span>`;
+            return `<span class="accuracy-bad">${value}</span>`;
+        }
+
+        function renderRecordsTable() {
+            const tbody = document.getElementById('records-tbody');
+            if (!signalRecords || !signalRecords.length) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+                return;
+            }
+            const records = signalRecords;
+
+            const filtered = records.filter(row => {
+                const sentiment = row.sentiment || '';
+                const v5 = row.verified_5d || '';
+                const v10 = row.verified_10d || '';
+                const v20 = row.verified_20d || '';
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'signal') return sentiment !== '中性';
+                if (currentFilter === 'wrong') return v5 === '误判' || v10 === '误判' || v20 === '误判';
+                if (currentFilter === 'pending') return sentiment !== '中性' && (v5 === '待验证' || v10 === '待验证' || v20 === '待验证');
+                return true;
+            });
+
+            let html = '';
+            filtered.forEach(row => {
+                const sentiment = row.sentiment || '';
+                const eCls = emotionClass(sentiment);
+                const ndx5 = formatReturn(row.ndx_5d);
+                const spx5 = formatReturn(row.spx_5d);
+                const ndx10 = formatReturn(row.ndx_10d);
+                const spx10 = formatReturn(row.spx_10d);
+                const ndx20 = formatReturn(row.ndx_20d);
+                const spx20 = formatReturn(row.spx_20d);
+                html += `<tr>
+                    <td class="col-date">${row.date || ''}</td>
+                    <td class="col-sentiment"><span class="${eCls}">${sentiment || '--'}</span></td>
+                    <td class="${ndx5.cls}">${ndx5.text}</td>
+                    <td class="${spx5.cls}">${spx5.text}</td>
+                    <td class="${ndx10.cls}">${ndx10.text}</td>
+                    <td class="${spx10.cls}">${spx10.text}</td>
+                    <td class="${ndx20.cls}">${ndx20.text}</td>
+                    <td class="${spx20.cls}">${spx20.text}</td>
+                    <td>${renderVerifyCell(row.verified_5d)}</td>
+                    <td>${renderVerifyCell(row.verified_10d)}</td>
+                    <td>${renderVerifyCell(row.verified_20d)}</td>
+                    <td>${renderAccuracyCell(row.accuracy)}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html || '<tr><td colspan="12" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+        }
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderRecordsTable();
+            };
+        });
+        
+        async function getApiBaseUrl() {
+            if (window.electronAPI && window.electronAPI.getServerUrl) {
+                try {
+                    const url = await window.electronAPI.getServerUrl();
+                    if (url) return url;
+                } catch (e) {}
+            }
+            if (window.location.origin && !window.location.origin.startsWith('file:') && window.location.origin !== 'null') {
+                return window.location.origin;
+            }
+            return 'http://127.0.0.1:5001';
+        }
+
+        async function requestGeminiSuggestions() {
+            const btn = document.getElementById('geminiBtn');
+            const apiKey = localStorage.getItem('gemini_api_key');
+            const baseUrl = await getApiBaseUrl();
+
+            if (!apiKey) {
+                alert('请先点击右侧齿轮图标⚙配置 Gemini API Key');
+                showGeminiSettings();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '正在读取数据...';
+
+            try {
+                const reviewRes = await fetch(`${baseUrl}/api/review-data`);
+                const reviewData = await reviewRes.json();
+
+                const prompt = buildGeminiPrompt(reviewData);
+
+                btn.textContent = '正在询问 Gemini...';
+
+                const geminiRes = await fetch(`${baseUrl}/api/call-gemini`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_key: localStorage.getItem('gemini_api_key'),
+                        model_id: localStorage.getItem('gemini_model_id') || 'gemini-2.0-flash',
+                        base_url: localStorage.getItem('gemini_base_url') || '',
+                        prompt: prompt
+                    })
+                });
+                const geminiData = await geminiRes.json();
+
+                if (geminiData.error) {
+                    showGeminiError(geminiData.error);
+                    return;
+                }
+
+                geminiFullResult = geminiData.result;
+                showGeminiResult(geminiData.result);
+            } catch (e) {
+                showGeminiError('网络请求失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '让 Gemini 分析误判规律并给出优化建议 ↗';
+            }
+        }
+
+        function buildGeminiPrompt(reviewData) {
+            const strategyText = reviewData.strategy_text || '';
+            const summary = reviewData.summary || {};
+            const signalRecords = reviewData.signal_records || [];
+            const emotionHitrates = reviewData.emotion_hitrates || {};
+            const indicatorContributions = reviewData.indicator_contributions || [];
+
+            let signalRecordsText = '';
+            signalRecords.forEach(r => {
+                signalRecordsText += `${r.date || '--'} | ${r.sentiment || '--'} | NDX5:${r.ndx_5d || '--'} SPX5:${r.spx_5d || '--'} | NDX10:${r.ndx_10d || '--'} SPX10:${r.spx_10d || '--'} | NDX20:${r.ndx_20d || '--'} SPX20:${r.spx_20d || '--'} | v5:${r.verified_5d || '--'} v10:${r.verified_10d || '--'} v20:${r.verified_20d || '--'} | 综合:${r.accuracy || '--'}\n`;
+            });
+
+            let emotionHitratesText = '';
+            Object.entries(emotionHitrates).forEach(([emotion, data]) => {
+                const r5 = data.verified_5d > 0 ? (data.correct_5d / data.verified_5d * 100).toFixed(1) + '%' : '--';
+                const r10 = data.verified_10d > 0 ? (data.correct_10d / data.verified_10d * 100).toFixed(1) + '%' : '--';
+                const r20 = data.verified_20d > 0 ? (data.correct_20d / data.verified_20d * 100).toFixed(1) + '%' : '--';
+                emotionHitratesText += `${emotion}: 共${data.total}条 | 5日命中:${r5}(${data.correct_5d}/${data.verified_5d}) | 10日命中:${r10}(${data.correct_10d}/${data.verified_10d}) | 20日命中:${r20}(${data.correct_20d}/${data.verified_20d})\n`;
+            });
+
+            let indicatorContribText = '';
+            indicatorContributions.forEach(ind => {
+                indicatorContribText += `${ind.label}(${ind.key}): 均值=${ind.avg != null ? ind.avg : '--'} 范围=[${ind.min != null ? ind.min : '--'}, ${ind.max != null ? ind.max : '--'}] 样本=${ind.sample_count} 触发=${ind.triggered_count}\n`;
+            });
+
+            const prompt = `你是一位专业的量化策略分析师，请根据以下信息分析我的美股情绪监测模型的运行情况，
+找出误判规律，并给出具体可操作的参数优化建议。
+
+【一、当前策略规则】
+${strategyText}
+
+【二、实时准确率看板（累计数据）】
+- 5日准确率：${summary.accuracy_5d}（已验证${summary.verified_count}条，正确${summary.correct_count}条）
+- 10日准确率：${summary.accuracy_10d}（已验证${summary.verified_10d}条，正确${summary.correct_10d}条）
+- 20日准确率：${summary.accuracy_20d}（已验证${summary.verified_20d}条，正确${summary.correct_20d}条）
+- 综合准确率：${summary.overall_accuracy}
+- 多空信号准确率：${summary.signal_accuracy}（仅统计恐慌/贪婪信号，共${summary.signal_total}条有效信号，已验${summary.signal_verified}条，${summary.signal_basis}）
+- 待验证信号：${summary.pending_count}条
+
+【三、最近信号记录（来自daily_log.csv，最多30条，日期升序）】
+${signalRecordsText || '暂无数据'}
+
+【四、各情绪级别命中率】
+${emotionHitratesText || '暂无数据'}
+
+【五、各指标触发贡献度（来自daily_log.json市场数据汇总）】
+${indicatorContribText || '暂无数据'}
+
+请从以下角度给出优化建议：
+            1. 分析各情绪级别的命中率差异，哪些情绪区间的预测最不准，原因可能是什么
+            2. 对比5日/10日/20日准确率的变化趋势，判断模型是短期预测更强还是长期更稳定
+            3. 根据各指标的当前数值区间和触发频率，判断哪些阈值需要收紧或放宽
+            4. 找出各指标之间可能存在冲突或冗余的地方
+            5. 基于以上分析，给出最优先改进的一条具体建议（带具体数值）
+
+            【核心规则：数据驱动分析】
+            - 你只能基于上面提供的实时准确率数据来做分析，严禁脱离数据进行主观推测
+            - 如果某个情绪级别、某个周期的验证数据为0或"--"，不能对该项给出优化建议，只能建议继续监测积累数据
+            - 如果所有准确率数据都显示"--"（无已验证数据），必须输出【结论：维持现有策略】，并说明数据不足需要继续积累
+            - 给出的任何参数优化建议，必须对应到当前策略文件中实际存在的参数和阈值
+            - 如果没有充分的数据支撑优化决策，不要强行输出优化策略
+
+  【严格要求输出格式——必须按顺序输出以下三部分】
+  
+  第一部分（第一行）：结论，必须为以下两种之一：
+  - 【结论：维持现有策略】
+  - 【结论：优化策略】
+
+  第二部分：分析正文（可自由发挥）
+
+  第三部分（最后一行）：复盘摘要，必须严格遵循以下格式：
+  【复盘摘要：XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX】
+  - 必须是整个回复的最后一行
+  - XXX 部分不超过30个汉字
+  - 只写核心结论和决策理由，不要写分析过程
+  - 示例：【复盘摘要：数据不足，仅1条5日验证，继续积累】
+  - 示例：【复盘摘要：5日准确率偏低，VIX阈值从25调至28】
+
+  如果是【结论：优化策略】，还必须在正文中以完整的 Python 代码形式输出优化后的策略文件，代码包裹在 \`\`\`python 和 \`\`\` 之间。
+
+  请用中文回复。`;
+            return prompt;
+        }
+
+        function renderMarkdown(text) {
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            html = html.replace(/^### (.*$)/gm, '<h3 style="font-size:16px;font-weight:700;margin:16px 0 8px;color:#111827;">$1</h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2 style="font-size:18px;font-weight:700;margin:18px 0 10px;color:#111827;">$1</h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1 style="font-size:20px;font-weight:800;margin:20px 0 10px;color:#111827;">$1</h1>');
+
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            html = html.replace(/^- (.*$)/gm, '<li style="margin-bottom:6px;">$1</li>');
+            html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:8px 0;">$&</ul>');
+
+            html = html.replace(/^(\d+)\. (.*$)/gm, '<li style="margin-bottom:6px;" value="$1">$2</li>');
+            html = html.replace(/(<li[^>]*value=.*<\/li>\n?)+/g, '<ol style="padding-left:20px;margin:8px 0;">$&</ol>');
+
+            html = html.replace(/`([^`]+)`/g, '<code style="background:#F3F4F6;padding:2px 6px;border-radius:4px;font-size:13px;">$1</code>');
+
+            html = html.replace(/\n\n/g, '</p><p style="margin:8px 0;">');
+            html = '<p style="margin:8px 0;">' + html + '</p>';
+
+            html = html.replace(/<p[^>]*><\/p>/g, '');
+
+            return html;
+        }
+
+        function parseGeminiResult(text) {
+            const isOptimize = text.includes('【结论：优化策略】');
+            const isMaintain = text.includes('【结论：维持现有策略】');
+            let strategyCode = '';
+            let summary = '';
+
+            if (isOptimize) {
+                const codeMatch = text.match(/```python\s*([\s\S]*?)```/);
+                if (codeMatch) {
+                    strategyCode = codeMatch[1].trim();
+                }
+            }
+
+            const lines = text.split('\n');
+            const summaryMatch = text.match(/【复盘摘要[：:]\s*(.*?)】/);
+            if (summaryMatch) {
+                summary = summaryMatch[1].trim().substring(0, 60);
+            }
+            if (!summary) {
+                const fallbackMatch = text.match(/复盘摘要[：:]\s*(.+)/);
+                if (fallbackMatch) {
+                    summary = fallbackMatch[1].trim().substring(0, 60);
+                }
+            }
+            if (!summary) summary = isOptimize ? '优化策略参数' : '数据积累中，维持现有策略';
+
+            return { isOptimize, strategyCode, summary };
+        }
+
+        function showGeminiResult(text) {
+            const panel = document.getElementById('suggestionsPanel');
+            const errorArea = document.getElementById('geminiErrorArea');
+            const content = document.getElementById('geminiResultContent');
+            const actions = document.getElementById('geminiResultActions');
+
+            errorArea.innerHTML = '';
+
+            geminiParsedResult = parseGeminiResult(text);
+            let displayText = text;
+
+            if (geminiParsedResult.isOptimize && geminiParsedResult.strategyCode) {
+                displayText = displayText.replace(/```python[\s\S]*?```/, '*[策略代码省略，可点击下方按钮采纳]*');
+            }
+
+            content.innerHTML = renderMarkdown(displayText);
+
+            if (actions) {
+                actions.innerHTML = `
+                    <button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()">复制全文</button>
+                    <button class="btn-adopt" id="btnAdoptStrategy" onclick="adoptStrategy()">采纳</button>
+                    <button class="btn-reject" id="btnRejectStrategy" onclick="rejectStrategy()">不采纳</button>
+                    <button class="btn btn-secondary" onclick="closeSuggestions()">关闭</button>
+                `;
+            }
+
+            panel.classList.add('active');
+
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        function showGeminiError(errorMsg) {
+            const panel = document.getElementById('suggestionsPanel');
+            const errorArea = document.getElementById('geminiErrorArea');
+            const content = document.getElementById('geminiResultContent');
+
+            content.innerHTML = '';
+            errorArea.innerHTML = `
+                <div class="gemini-result-error">
+                    <div class="gemini-error-title">⚠ 分析失败</div>
+                    <div class="gemini-error-detail">${errorMsg}</div>
+                    <button class="gemini-error-btn" onclick="closeSuggestions();showGeminiSettings();">重新配置 API Key</button>
+                </div>`;
+            panel.classList.add('active');
+
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        async function adoptStrategy() {
+            if (!geminiParsedResult) return;
+            const btn = document.getElementById('btnAdoptStrategy');
+            const btnReject = document.getElementById('btnRejectStrategy');
+            if (!btn) return;
+
+            btn.disabled = true;
+            if (btnReject) btnReject.disabled = true;
+
+            const isOptimize = geminiParsedResult.isOptimize;
+            const resultType = isOptimize ? '优化' : '维持';
+
+            btn.textContent = '处理中...';
+
+            try {
+                const baseUrl = await getApiBaseUrl();
+                const body = {
+                    strategy_code: isOptimize ? (geminiParsedResult.strategyCode || '') : '',
+                    analysis_result: resultType,
+                    action: '采纳',
+                    summary: geminiParsedResult.summary,
+                    full_analysis: geminiFullResult || ''
+                };
+
+                const res = await fetch(`${baseUrl}/api/save-review-result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.textContent = '已采纳 ✓';
+                    btn.classList.add('adopted');
+                    if (btnReject) btnReject.classList.add('disabled-btn');
+                    if (data.strategy_updated) {
+                        alert('策略已更新！后续回测将使用最新策略。');
+                    } else {
+                        alert('结论已记录。');
+                    }
+                    loadReviewHistory();
+                } else {
+                    alert('操作失败: ' + (data.error || '未知错误'));
+                    btn.disabled = false;
+                    if (btnReject) btnReject.disabled = false;
+                    btn.textContent = '采纳';
+                }
+            } catch (e) {
+                alert('操作失败: ' + e.message);
+                btn.disabled = false;
+                if (btnReject) btnReject.disabled = false;
+                btn.textContent = '采纳';
+            }
+        }
+
+        async function rejectStrategy() {
+            if (!geminiParsedResult) return;
+            const btn = document.getElementById('btnRejectStrategy');
+            const btnAdopt = document.getElementById('btnAdoptStrategy');
+            if (!btn) return;
+
+            btn.disabled = true;
+            if (btnAdopt) btnAdopt.disabled = true;
+
+            const isOptimize = geminiParsedResult.isOptimize;
+            const resultType = isOptimize ? '优化' : '维持';
+
+            btn.textContent = '处理中...';
+
+            try {
+                const baseUrl = await getApiBaseUrl();
+                const body = {
+                    strategy_code: '',
+                    analysis_result: resultType,
+                    action: '不采纳',
+                    summary: geminiParsedResult.summary,
+                    full_analysis: geminiFullResult || ''
+                };
+
+                const res = await fetch(`${baseUrl}/api/save-review-result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.textContent = '已记录';
+                    btn.classList.add('adopted');
+                    if (btnAdopt) btnAdopt.classList.add('disabled-btn');
+                    alert('不采纳：策略文件未修改，复盘结果已记录。');
+                    loadReviewHistory();
+                } else {
+                    alert('操作失败: ' + (data.error || '未知错误'));
+                    btn.disabled = false;
+                    if (btnAdopt) btnAdopt.disabled = false;
+                    btn.textContent = '不采纳';
+                }
+            } catch (e) {
+                alert('操作失败: ' + e.message);
+                btn.disabled = false;
+                if (btnAdopt) btnAdopt.disabled = false;
+                btn.textContent = '不采纳';
+            }
+        }
+
+        async function loadReviewHistory() {
+            try {
+                const baseUrl = await waitForFlaskReady(5, 1000);
+                if (!baseUrl) return;
+                const res = await fetch(`${baseUrl}/api/review-history`);
+                const history = await res.json();
+                renderReviewHistory(history);
+            } catch (e) {}
+        }
+
+        function renderReviewHistory(history) {
+            const tbody = document.getElementById('review-history-tbody');
+            if (!tbody) return;
+            if (!history || !history.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9CA3AF">暂无复盘记录</td></tr>';
+                return;
+            }
+            let html = '';
+            history.slice().reverse().forEach(h => {
+                const tag = h.result === '优化' ? '<span class="tag wrong">优化</span>' : '<span class="tag correct">维持</span>';
+                const actionTag = h.action === '采纳' ? '<span class="tag correct">采纳</span>' : '<span class="tag pending">不采纳</span>';
+                html += `<tr><td>${h.date}</td><td>${tag}</td><td>${actionTag}</td><td class="summary-col">${h.summary || '--'}</td></tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function copyGeminiResult() {
+            if (!geminiFullResult) return;
+            const btn = document.getElementById('btnCopyResult');
+
+            navigator.clipboard.writeText(geminiFullResult).then(() => {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '复制全文';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+            const textarea = document.createElement('textarea');
+                textarea.value = geminiFullResult;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '复制全文';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function showGeminiSettings() {
+            const modal = document.getElementById('geminiKeyModal');
+            const keyInput = document.getElementById('geminiKeyInput');
+            const modelInput = document.getElementById('geminiModelIdInput');
+            const baseUrlInput = document.getElementById('geminiBaseUrlInput');
+            const toast = document.getElementById('modalToast');
+
+            keyInput.value = localStorage.getItem('gemini_api_key') || '';
+            modelInput.value = localStorage.getItem('gemini_model_id') || 'gemini-2.0-flash';
+            baseUrlInput.value = localStorage.getItem('gemini_base_url') || '';
+
+            keyInput.classList.remove('error');
+            modelInput.classList.remove('error');
+            document.getElementById('apiKeyError').classList.remove('show');
+            document.getElementById('modelIdError').classList.remove('show');
+            toast.className = 'modal-toast';
+            toast.textContent = '';
+
+            modal.classList.add('active');
+            setTimeout(() => modelInput.focus(), 100);
+        }
+
+        function closeGeminiSettings() {
+            document.getElementById('geminiKeyModal').classList.remove('active');
+        }
+
+        function saveGeminiConfig() {
+            const modelInput = document.getElementById('geminiModelIdInput');
+            const keyInput = document.getElementById('geminiKeyInput');
+            const baseUrlInput = document.getElementById('geminiBaseUrlInput');
+            const toast = document.getElementById('modalToast');
+            const modelId = modelInput.value.trim();
+            const apiKey = keyInput.value.trim();
+            const baseUrl = baseUrlInput.value.trim();
+
+            let hasError = false;
+
+            if (!modelId) {
+                modelInput.classList.add('error');
+                document.getElementById('modelIdError').classList.add('show');
+                hasError = true;
+            } else {
+                modelInput.classList.remove('error');
+                document.getElementById('modelIdError').classList.remove('show');
+            }
+
+            if (!apiKey) {
+                keyInput.classList.add('error');
+                document.getElementById('apiKeyError').classList.add('show');
+                hasError = true;
+            } else {
+                keyInput.classList.remove('error');
+                document.getElementById('apiKeyError').classList.remove('show');
+            }
+
+            if (hasError) return;
+
+            localStorage.setItem('gemini_model_id', modelId);
+            localStorage.setItem('gemini_api_key', apiKey);
+            localStorage.setItem('gemini_base_url', baseUrl);
+
+            toast.textContent = '保存成功 ✓';
+            toast.className = 'modal-toast success';
+
+            setTimeout(() => {
+                closeGeminiSettings();
+                toast.className = 'modal-toast';
+                toast.textContent = '';
+            }, 1000);
+        }
+
+        function clearGeminiConfig() {
+            localStorage.removeItem('gemini_api_key');
+            localStorage.removeItem('gemini_model_id');
+            localStorage.removeItem('gemini_base_url');
+
+            document.getElementById('geminiKeyInput').value = '';
+            document.getElementById('geminiModelIdInput').value = '';
+            document.getElementById('geminiBaseUrlInput').value = '';
+
+            const toast = document.getElementById('modalToast');
+            toast.textContent = '已清除';
+            toast.className = 'modal-toast info';
+
+            setTimeout(() => {
+                closeGeminiSettings();
+                toast.className = 'modal-toast';
+                toast.textContent = '';
+            }, 1500);
+        }
+
+        function showSuggestions(data) {
+        }
+        
+        function closeSuggestions() {
+            document.getElementById('suggestionsPanel').classList.remove('active');
+        }
+        
+        function saveSuggestions() {
+        }
+    </script>
+</body>
+</html>
+<!-- Gemini分析功能：数据来源 validation_results.json + daily_log.json，
+     策略来源 strategy_rules.py，API转发通过 /api/call-gemini -->

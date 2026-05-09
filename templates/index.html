@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美股情绪监测图</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            background-color: #F9FAFB;
+            color: #111827;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            gap: 24px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+            margin: 0;
+        }
+        .header-badge {
+            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .update-info {
+            font-size: 13px;
+            color: #6B7280;
+            white-space: nowrap;
+        }
+        .update-btn {
+            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .update-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+        .update-btn:active {
+            transform: translateY(0);
+        }
+        .update-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .switch-btn {
+            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .switch-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+        }
+        
+        .banner-card {
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .banner-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .banner-status-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .sentiment-pill {
+            padding: 10px 24px;
+            border-radius: 9999px;
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sentiment-pill.extreme-fear { background: linear-gradient(135deg, #991B1B 0%, #DC2626 100%); }
+        .sentiment-pill.fear { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+        .sentiment-pill.neutral { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); }
+        .sentiment-pill.greed { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+        .sentiment-pill.extreme-greed { background: linear-gradient(135deg, #15803D 0%, #16A34A 100%); }
+        .signal-strength {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 9999px;
+            color: #F9FAFB;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .signal-strength.confirm {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+        .signal-strength.enhance {
+            background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+        }
+        .trigger-conditions {
+            max-width: 400px;
+            text-align: right;
+        }
+        .trigger-label {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }
+        .trigger-text {
+            font-size: 14px;
+            color: #D1D5DB;
+            line-height: 1.5;
+        }
+        .banner-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 768px) {
+            .banner-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+        .action-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .action-label {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #F9FAFB;
+        }
+        
+        .card-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        @media (max-width: 1024px) {
+            .card-group {
+                grid-template-columns: 1fr;
+            }
+        }
+        .data-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #F9FAFB;
+            border-radius: 10px;
+        }
+        .metric-label {
+            font-size: 13px;
+            color: #6B7280;
+            font-weight: 500;
+        }
+        .metric-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+        }
+        .section-header {
+            font-size: 11px;
+            color: #9CA3AF;
+            font-weight: 700;
+            padding-top: 16px;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .status-bar-card {
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .status-bar-header {
+            color: #9CA3AF;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        .status-bar-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-label {
+            color: #9CA3AF;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .status-footer-note {
+            color: #6B7280;
+            font-size: 11px;
+            margin-top: 16px;
+        }
+        .metric-value.positive { color: #16A34A; }
+        .metric-value.negative { color: #DC2626; }
+        .fuse-pill {
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+        }
+        .fuse-pill.triggered { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+        .fuse-pill.safe { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+        
+        .chart-section {
+            margin-bottom: 24px;
+        }
+        .chart-container {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #374151;
+            margin: 0 0 16px;
+        }
+        .chart-iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            display: block;
+        }
+        
+        .explain-section {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #E5E7EB;
+        }
+        .explain-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .explain-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px 32px;
+        }
+        @media (max-width: 768px) {
+            .explain-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .explain-item {
+            padding: 14px 16px;
+            background: #F9FAFB;
+            border-radius: 10px;
+        }
+        .explain-item strong {
+            color: #374151;
+            font-size: 13px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .explain-item p {
+            color: #6B7280;
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .sub-note {
+            font-size: 11px;
+            color: #9CA3AF;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1 class="header-title">美股情绪监测图</h1>
+                <span class="header-badge">20个核心指标</span>
+            </div>
+            <div class="header-right">
+                <div class="update-info" id="updateTime">最后更新: -</div>
+                <a href="/review" class="switch-btn">复盘进化</a>
+                <button id="updateBtn" onclick="updateData()" class="update-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6"></path>
+                        <path d="M2.5 22v-6h6"></path>
+                        <path d="M21.5 13a9 9 0 0 0-18 0"></path>
+                        <path d="M2.5 11a9 9 0 0 1 18 0"></path>
+                    </svg>
+                    更新数据
+                </button>
+            </div>
+        </div>
+
+        <div class="banner-card">
+            <div class="banner-top">
+                <div class="banner-status-section">
+                    <div id="v2SentimentPill" class="sentiment-pill neutral">中性</div>
+                    <div id="v2SignalStrength" class="signal-strength">信号强度: 普通</div>
+                </div>
+                <div class="trigger-conditions">
+                    <div class="trigger-label">触发条件</div>
+                    <div id="v2TriggerConditions" class="trigger-text">无特殊信号，市场处于中性状态</div>
+                </div>
+            </div>
+            <div class="banner-actions">
+                <div class="action-card">
+                    <div class="action-label">🎯 目标仓位</div>
+                    <div class="action-value" id="v2TargetPosition">80%</div>
+                </div>
+                <div class="action-card">
+                    <div class="action-label">💼 操作建议</div>
+                    <div class="action-value" id="v2PositionAdjustment">维持底仓</div>
+                </div>
+                <div class="action-card">
+                    <div class="action-label">💰 定投金额</div>
+                    <div class="action-value" id="v2InvestmentAdvice">100%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统级防线 - 全局横幅 -->
+        <div class="status-bar-card">
+            <div class="status-bar-header">系统级防线</div>
+            <div class="status-bar-row">
+                <div class="status-item">
+                    <span class="status-label">防假恐高熔断器</span>
+                    <span id="v2IsAaiiValid" class="fuse-pill safe">🛡️ 未触发 (安全)</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">防杀估值过滤器</span>
+                    <span id="v2IsRateShock" class="fuse-pill safe">🛡️ 未触发 (安全)</span>
+                </div>
+            </div>
+            <div class="status-footer-note">AAII现为辅助确认，不单独触发情绪级别</div>
+        </div>
+
+        <div class="card-group">
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="card-icon">📈</span>
+                    <h2 class="card-title">纳斯达克100核心指标</h2>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">最高指数</span>
+                        <span class="metric-value" id="v2NdxHigh">27314.21</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">当前指数</span>
+                        <span class="metric-value" id="v2NdxCurrent">27303.67</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">回撤比例</span>
+                        <span class="metric-value positive" id="v2NdxDrawdown">0.04%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">高于200日线比例</span>
+                        <span class="metric-value" id="v2NdxBreadth">53.00%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">偏离200日线</span>
+                        <span class="metric-value positive" id="v2NdxDeviation">10.49%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">相对标普500强弱</span>
+                        <span class="metric-value" id="v2NdxSpxRatio">1.35</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">QQQ OI Ratio (主信号)</span>
+                        <span class="metric-value" id="v2QqqPcr">0.85 (±0%)</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">QQQ Volume Ratio (参考)</span>
+                        <span class="metric-value" id="v2QqqVolumeRatio">0.90</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="card-icon">📊</span>
+                    <h2 class="card-title">标普500宽基指标</h2>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">最高指数</span>
+                        <span class="metric-value" id="v2Sp500High">7168.59</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">当前指数</span>
+                        <span class="metric-value" id="v2Sp500Current">7165.08</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">回撤比例</span>
+                        <span class="metric-value positive" id="v2Sp500Drawdown">0.05%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">高于200日线比例</span>
+                        <span class="metric-value" id="v2Sp500Breadth">57.00%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">偏离200日线</span>
+                        <span class="metric-value positive" id="v2Sp500Deviation">6.85%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">SPY OI Ratio (主信号)</span>
+                        <span class="metric-value" id="v2SpyPcr">0.85 (±0%)</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">SPY Volume Ratio (参考)</span>
+                        <span class="metric-value" id="v2SpyVolumeRatio">0.90</span>
+                    </div>
+                    
+                    <div class="section-header">散户情绪 (AAII)</div>
+                    <div class="metric-item">
+                        <span class="metric-label">AAII看空</span>
+                        <span class="metric-value" id="v2AaiiBear">46.8%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">AAII看多</span>
+                        <span class="metric-value" id="v2AaiiBull">33.3%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">AAII情绪差</span>
+                        <span class="metric-value" id="v2AaiiSpread">13.5%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="card-icon">🌍</span>
+                    <h2 class="card-title">宏观情绪指标</h2>
+                </div>
+                <div class="metrics-grid">
+                    <div class="section-header">波动率与利率</div>
+                    <div class="metric-item">
+                        <span class="metric-label">VIX恐慌指数</span>
+                        <span class="metric-value" id="v2Vix">18.71</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">VIX期限结构</span>
+                        <span class="metric-value" id="v2VixTermRatio">0.88</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">10年期美债收益率偏离MA50</span>
+                        <span class="metric-value positive" id="v2TnxMa50Diff">2.12%</span>
+                    </div>
+                    
+                    <div class="section-header">流动性与信用</div>
+                    <div class="metric-item">
+                        <span class="metric-label">高收益债券信用利差</span>
+                        <span class="metric-value" id="v2CreditSpread">2.86%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">美联储隔夜逆回购偏离</span>
+                        <span class="metric-value" id="v2OnRrpDeviation">-5.2%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">小盘/大盘相对强弱</span>
+                        <span class="metric-value" id="v2IwmSpyDeviation">-2.1%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-container" style="height: auto; overflow: visible; max-height: none;">
+                <h3 class="chart-title">📈 纳斯达克100指数趋势</h3>
+                <iframe src="nasdaq100_chart.html" class="chart-iframe" frameborder="0" style="height: 600px;"></iframe>
+            </div>
+            <div class="chart-container" style="height: auto; overflow: visible; max-height: none;">
+                <h3 class="chart-title">📊 标普500指数趋势</h3>
+                <iframe src="sp500_chart.html" class="chart-iframe" frameborder="0" style="height: 600px;"></iframe>
+            </div>
+        </div>
+
+        <div class="explain-section">
+            <h3 class="explain-title">📖 指标说明</h3>
+            <div class="explain-grid">
+                <div class="explain-item">
+                    <strong>纳斯达克100 / 标普500最高指数</strong>
+                    <p>过去10年历史高点，计算回撤基准</p>
+                </div>
+                <div class="explain-item">
+                    <strong>QQQ OI Ratio (主信号)</strong>
+                    <p>纳斯达克100期权持仓量比率，计算相对20日平均的偏离，用于判断市场恐慌/贪婪，偏离>40%恐慌，偏离<-25%贪婪</p>
+                </div>
+                <div class="explain-item">
+                    <strong>SPY OI Ratio (主信号)</strong>
+                    <p>标普500期权持仓量比率，计算相对20日平均的偏离，用于辅助确认QQQ信号，同时触发时信号增强</p>
+                </div>
+                <div class="explain-item">
+                    <strong>Volume Ratio (参考)</strong>
+                    <p>期权成交量比率，辅助参考，不影响情绪判断</p>
+                </div>
+                <div class="explain-item">
+                    <strong>回撤比例</strong>
+                    <p>相对历史高点跌幅</p>
+                </div>
+                <div class="explain-item">
+                    <strong>52周新高/新低</strong>
+                    <p>成分股创新高比例，市场广度</p>
+                </div>
+                <div class="explain-item">
+                    <strong>偏离200日线</strong>
+                    <p>相对200日均线偏离</p>
+                </div>
+                <div class="explain-item">
+                    <strong>小盘/大盘</strong>
+                    <p>IWM/SPY比率，风险偏好</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            loadMarketData();
+        }
+
+        function loadMarketData() {
+            const ts = new Date().getTime();
+            fetch('/market_data.json?t=' + ts)
+                .then(response => response.json())
+                .then(data => {
+                    updateDisplay(data);
+                })
+                .catch(error => {
+                    console.log('无法读取，可能使用默认');
+                });
+        }
+
+        function updateDisplay(data) {
+            if (data.last_update) {
+                document.getElementById('updateTime').textContent = '最后更新: ' + data.last_update;
+            }
+            if (data.nasdaq100_high !== undefined) {
+                document.getElementById('v2NdxHigh').textContent = data.nasdaq100_high.toLocaleString();
+            }
+            if (data.nasdaq100_current !== undefined) {
+                document.getElementById('v2NdxCurrent').textContent = data.nasdaq100_current.toLocaleString();
+            }
+            if (data.nasdaq100_drawdown !== undefined) {
+                const el = document.getElementById('v2NdxDrawdown');
+                const v = Math.abs(data.nasdaq100_drawdown);
+                el.textContent = v.toFixed(2) + '%';
+                el.className = 'metric-value' + (data.nasdaq100_drawdown < 0 ? ' negative' : ' positive');
+            }
+            if (data.ndx_breadth_200ma !== undefined) {
+                document.getElementById('v2NdxBreadth').textContent = data.ndx_breadth_200ma.toFixed(2) + '%';
+            }
+            if (data.nasdaq100_deviation_200ma !== undefined) {
+                const el = document.getElementById('v2NdxDeviation');
+                el.textContent = data.nasdaq100_deviation_200ma.toFixed(2) + '%';
+                el.className = 'metric-value' + (data.nasdaq100_deviation_200ma <0 ? ' negative' : ' positive');
+            }
+            if (data.ndx_spx_ratio !== undefined && data.ndx_spx_ratio !== null) {
+                document.getElementById('v2NdxSpxRatio').textContent = data.ndx_spx_ratio.toFixed(2);
+            } else {
+                document.getElementById('v2NdxSpxRatio').textContent = '-';
+            }
+            if (data.sp500_high !== undefined) {
+                document.getElementById('v2Sp500High').textContent = data.sp500_high.toLocaleString();
+            }
+            if (data.sp500_current !== undefined) {
+                document.getElementById('v2Sp500Current').textContent = data.sp500_current.toLocaleString();
+            }
+            if (data.sp500_drawdown !== undefined) {
+                const el = document.getElementById('v2Sp500Drawdown');
+                const v = Math.abs(data.sp500_drawdown);
+                el.textContent = v.toFixed(2) + '%';
+                el.className = 'metric-value' + (data.sp500_drawdown < 0 ? ' negative' : ' positive');
+            }
+            if (data.sp500_breadth_200ma !== undefined) {
+                document.getElementById('v2Sp500Breadth').textContent = data.sp500_breadth_200ma.toFixed(2) + '%';
+            }
+            if (data.sp500_deviation_200ma !== undefined) {
+                const el = document.getElementById('v2Sp500Deviation');
+                el.textContent = data.sp500_deviation_200ma.toFixed(2) + '%';
+                el.className = 'metric-value' + (data.sp500_deviation_200ma <0 ? ' negative' : ' positive');
+            }
+            if (data.current_vix !== undefined) {
+                document.getElementById('v2Vix').textContent = data.current_vix.toFixed(2);
+            }
+            if (data.vix_term_ratio !== undefined && data.vix_term_ratio !== null) {
+                let s = data.vix_term_ratio.toFixed(2);
+                if (data.vix_term_trigger_days !== undefined && data.vix_term_trigger_days >0) {
+                    s += ` (持续${data.vix_term_trigger_days}天)`;
+                }
+                document.getElementById('v2VixTermRatio').textContent = s;
+            } else {
+                document.getElementById('v2VixTermRatio').textContent = '-';
+            }
+            if (data.tnx_ma50_diff !== undefined && data.tnx_ma50_diff !== null) {
+                const el = document.getElementById('v2TnxMa50Diff');
+                el.textContent = data.tnx_ma50_diff.toFixed(2) + '%';
+                el.className = 'metric-value' + (data.tnx_ma50_diff <0 ? ' negative' : ' positive');
+            } else {
+                document.getElementById('v2TnxMa50Diff').textContent = '-';
+            }
+            if (data.aaii_bearish !== undefined) {
+                document.getElementById('v2AaiiBear').textContent = typeof data.aaii_bearish === 'string' ? data.aaii_bearish : data.aaii_bearish.toFixed(1) + '%';
+            }
+            if (data.aaii_bullish !== undefined) {
+                document.getElementById('v2AaiiBull').textContent = typeof data.aaii_bullish === 'string' ? data.aaii_bullish : data.aaii_bullish.toFixed(1) + '%';
+            }
+            if (data.aaii_sentiment_diff !== undefined) {
+                document.getElementById('v2AaiiSpread').textContent = (typeof data.aaii_sentiment_diff === 'number' ? data.aaii_sentiment_diff : (parseFloat(data.aaii_sentiment_diff))).toFixed(1) + '%';
+            }
+            if (data.credit_spread !== undefined && data.credit_spread !== null) {
+                document.getElementById('v2CreditSpread').textContent = typeof data.credit_spread === 'string' ? data.credit_spread : data.credit_spread.toFixed(2) + '%';
+            } else {
+                document.getElementById('v2CreditSpread').textContent = '-';
+            }
+            // QQQ PCR
+            if (data.qqq_pcr !== undefined && data.qqq_pcr !== null) {
+                const el = document.getElementById('v2QqqPcr');
+                let mainStr = data.qqq_pcr.toFixed(2);
+                let devStr = '';
+                let statusStr = '';
+                if (data.qqq_pcr_status !== undefined && data.qqq_pcr_status !== null && data.qqq_pcr_status !== '正常') {
+                    statusStr = ' (' + data.qqq_pcr_status + ')';
+                } else if (data.qqq_pcr_deviation !== undefined && data.qqq_pcr_deviation !== null) {
+                    const dev = data.qqq_pcr_deviation;
+                    const devColorClass = dev > 0 ? 'negative' : 'positive';
+                    devStr = ' (<span class="' + devColorClass + '">' + (dev > 0 ? '+' : '') + dev.toFixed(1) + '%</span>)';
+                }
+                el.innerHTML = mainStr + (statusStr || devStr);
+                el.className = 'metric-value';
+            } else {
+                document.getElementById('v2QqqPcr').textContent = '-';
+            }
+            if (data.qqq_volume_ratio !== undefined && data.qqq_volume_ratio !== null) {
+                document.getElementById('v2QqqVolumeRatio').textContent = data.qqq_volume_ratio.toFixed(2);
+            } else {
+                document.getElementById('v2QqqVolumeRatio').textContent = '-';
+            }
+            
+            // SPY PCR
+            if (data.spy_pcr !== undefined && data.spy_pcr !== null) {
+                const el = document.getElementById('v2SpyPcr');
+                let mainStr = data.spy_pcr.toFixed(2);
+                let devStr = '';
+                let statusStr = '';
+                if (data.spy_pcr_status !== undefined && data.spy_pcr_status !== null && data.spy_pcr_status !== '正常') {
+                    statusStr = ' (' + data.spy_pcr_status + ')';
+                } else if (data.spy_pcr_deviation !== undefined && data.spy_pcr_deviation !== null) {
+                    const dev = data.spy_pcr_deviation;
+                    const devColorClass = dev > 0 ? 'negative' : 'positive';
+                    devStr = ' (<span class="' + devColorClass + '">' + (dev > 0 ? '+' : '') + dev.toFixed(1) + '%</span>)';
+                }
+                el.innerHTML = mainStr + (statusStr || devStr);
+                el.className = 'metric-value';
+            } else {
+                document.getElementById('v2SpyPcr').textContent = '-';
+            }
+            if (data.spy_volume_ratio !== undefined && data.spy_volume_ratio !== null) {
+                document.getElementById('v2SpyVolumeRatio').textContent = data.spy_volume_ratio.toFixed(2);
+            } else {
+                document.getElementById('v2SpyVolumeRatio').textContent = '-';
+            }
+            if (data.on_rrp_deviation !== undefined && data.on_rrp_deviation !== null) {
+                const el = document.getElementById('v2OnRrpDeviation');
+                const v = data.on_rrp_deviation;
+                el.textContent = v.toFixed(2) + '%';
+                el.className = 'metric-value' + (v < 0 ? ' negative' : ' positive');
+            } else {
+                document.getElementById('v2OnRrpDeviation').textContent = '-';
+            }
+            if (data.iwm_spy_deviation !== undefined && data.iwm_spy_deviation !== null) {
+                const el = document.getElementById('v2IwmSpyDeviation');
+                const v = data.iwm_spy_deviation;
+                el.textContent = v.toFixed(2) + '%';
+                el.className = 'metric-value' + (v <0 ? ' negative' : ' positive');
+            } else {
+                document.getElementById('v2IwmSpyDeviation').textContent = '-';
+            }
+            if (data.current_vix !== undefined) {
+                const vix = data.current_vix;
+                const nas_drawdown = Math.abs(data.nasdaq100_drawdown || 0);
+                const spx_drawdown = Math.abs(data.sp500_drawdown || 0);
+                const is_aaii_valid = (data.nasdaq100_drawdown <= -5) || (data.sp500_drawdown <= -5) || (vix >= 20);
+                const aaii_pill = document.getElementById('v2IsAaiiValid');
+                if (is_aaii_valid) {
+                    aaii_pill.textContent = '✅ 已触发 (防御中)';
+                    aaii_pill.className = 'fuse-pill triggered';
+                } else {
+                    aaii_pill.textContent = '🛡️ 未触发 (安全)';
+                    aaii_pill.className = 'fuse-pill safe';
+                }
+                const is_rate_shock = (data.tnx_ma50_diff !== null && data.tnx_ma50_diff !== undefined && data.tnx_ma50_diff >10);
+                const rate_pill = document.getElementById('v2IsRateShock');
+                if (is_rate_shock) {
+                    rate_pill.textContent = '✅ 已触发 (防御中)';
+                    rate_pill.className = 'fuse-pill triggered';
+                } else {
+                    rate_pill.textContent = '🛡️ 未触发 (安全)';
+                    rate_pill.className = 'fuse-pill safe';
+                }
+            }
+            if (data.sentiment_result !== undefined) {
+                const pill = document.getElementById('v2SentimentPill');
+                pill.textContent = data.sentiment_result;
+                pill.className = 'sentiment-pill';
+                if (data.sentiment_result === '极度恐慌') pill.classList.add('extreme-fear');
+                else if (data.sentiment_result === '恐慌') pill.classList.add('fear');
+                else if (data.sentiment_result === '中性') pill.classList.add('neutral');
+                else if (data.sentiment_result === '贪婪') pill.classList.add('greed');
+                else if (data.sentiment_result === '极度贪婪') pill.classList.add('extreme-greed');
+            }
+            if (data.signal_strength !== undefined) {
+                const el = document.getElementById('v2SignalStrength');
+                el.textContent = '信号强度: ' + data.signal_strength;
+                el.className = 'signal-strength';
+                if (data.signal_strength === '确认') {
+                    el.classList.add('confirm');
+                } else if (data.signal_strength === '增强') {
+                    el.classList.add('enhance');
+                }
+            }
+            if (data.sentiment_conditions !== undefined && Array.isArray(data.sentiment_conditions) && data.sentiment_conditions.length >0) {
+                document.getElementById('v2TriggerConditions').textContent = data.sentiment_conditions.join('，');
+            } else {
+                document.getElementById('v2TriggerConditions').textContent = '默认兜底为中性';
+            }
+            if (data.position_advice !== undefined) {
+                let tpos = document.getElementById('v2TargetPosition');
+                let pos_adj = document.getElementById('v2PositionAdjustment');
+                let inv_adv = document.getElementById('v2InvestmentAdvice');
+                tpos.textContent = (data.target_position !== undefined) ? data.target_position + '%' : '--';
+                const tp = data.target_position || 0;
+                if (tp >= 100) pos_adj.textContent = '满仓持有';
+                else if (tp >= 90) pos_adj.textContent = '高仓持有';
+                else if (tp >= 80) pos_adj.textContent = '维持底仓';
+                else if (tp >= 70) pos_adj.textContent = '止盈减仓';
+                else if (tp >= 55) pos_adj.textContent = '降至核心底仓';
+                else pos_adj.textContent = '低仓防御';
+                inv_adv.textContent = (data.daily_buy_amount !== undefined) ? (data.daily_buy_amount + '元/日') : '--';
+            }
+        }
+
+        function updateData() {
+            const btn = document.getElementById('updateBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '更新中...';
+
+            fetch('/update_data', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        var pollCount = 0;
+                        var maxPolls = 60;
+                        var pollInterval = setInterval(function() {
+                            pollCount++;
+                            fetch('/market_data.json?t=' + new Date().getTime())
+                                .then(response => response.json())
+                                .then(latestData => {
+                                    if (latestData.last_update && latestData.last_update !== document.getElementById('updateTime').textContent.replace('最后更新: ', '')) {
+                                        clearInterval(pollInterval);
+                                        loadMarketData();
+                                        btn.disabled = false;
+                                        btn.textContent = originalText;
+                                    } else if (pollCount >= maxPolls) {
+                                        clearInterval(pollInterval);
+                                        loadMarketData();
+                                        btn.disabled = false;
+                                        btn.textContent = originalText;
+                                    }
+                                })
+                                .catch(function() {
+                                    if (pollCount >= maxPolls) {
+                                        clearInterval(pollInterval);
+                                        loadMarketData();
+                                        btn.disabled = false;
+                                        btn.textContent = originalText;
+                                    }
+                                });
+                        }, 2000);
+                    } else {
+                        alert('数据更新失败');
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    alert('请求失败');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMarketData();
+        });
+    </script>
+</body>
+</html>

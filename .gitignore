@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+*.log
+server_out.txt
+server_err.txt
+full_output.txt
+output.txt
+.trae/

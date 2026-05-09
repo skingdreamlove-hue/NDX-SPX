@@ -1,0 +1,330 @@
+{
+  "performance": {
+    "strategy_total_return": 1.3725281338284006,
+    "strategy_annual_return": 0.07944341806648536,
+    "strategy_max_dd": -0.32185296267758196,
+    "strategy_sharpe": 0.42372359040657026,
+    "benchmark_total_return": 3.1287093257955565,
+    "benchmark_annual_return": 0.13367661265062147,
+    "benchmark_max_dd": -0.2696444156830255,
+    "benchmark_sharpe": 0.8036651353615882,
+    "alpha": -0.05423319458413611
+  },
+  "emotion_statistics": {
+    "极度恐慌": {
+      "count": 293,
+      "pct": 10.3,
+      "num_episodes": 82,
+      "avg_duration": 3.6,
+      "max_duration": 44,
+      "fwd_5d_return": 1.23,
+      "fwd_10d_return": 2.12,
+      "fwd_20d_return": 4.39,
+      "signal_accuracy_5d": 63.5,
+      "signal_accuracy_10d": 69.3,
+      "signal_accuracy_20d": 72.9
+    },
+    "恐慌": {
+      "count": 347,
+      "pct": 12.2,
+      "num_episodes": 62,
+      "avg_duration": 5.6,
+      "max_duration": 57,
+      "fwd_5d_return": 0.2,
+      "fwd_10d_return": 0.53,
+      "fwd_20d_return": 1.1,
+      "signal_accuracy_5d": 57.1,
+      "signal_accuracy_10d": 60.2,
+      "signal_accuracy_20d": 61.1
+    },
+    "中性": {
+      "count": 1531,
+      "pct": 53.8,
+      "num_episodes": 0,
+      "avg_duration": 0,
+      "max_duration": 0,
+      "fwd_5d_return": 0.35,
+      "fwd_10d_return": 0.7,
+      "fwd_20d_return": 1.19,
+      "signal_accuracy_5d": null,
+      "signal_accuracy_10d": null,
+      "signal_accuracy_20d": null
+    },
+    "贪婪": {
+      "count": 608,
+      "pct": 21.3,
+      "num_episodes": 92,
+      "avg_duration": 6.6,
+      "max_duration": 66,
+      "fwd_5d_return": 0.14,
+      "fwd_10d_return": 0.45,
+      "fwd_20d_return": 1.07,
+      "signal_accuracy_5d": 43.3,
+      "signal_accuracy_10d": 39.0,
+      "signal_accuracy_20d": 35.5
+    },
+    "极度贪婪": {
+      "count": 69,
+      "pct": 2.4,
+      "num_episodes": 19,
+      "avg_duration": 3.6,
+      "max_duration": 9,
+      "fwd_5d_return": 0.0,
+      "fwd_10d_return": -0.8,
+      "fwd_20d_return": -0.36,
+      "signal_accuracy_5d": 56.5,
+      "signal_accuracy_10d": 44.9,
+      "signal_accuracy_20d": 50.7
+    }
+  },
+  "key_dates": {
+    "2015-08-24": {
+      "emotion": "极度恐慌",
+      "triggered_conditions": [
+        [
+          "极度恐慌",
+          "vix_term"
+        ],
+        [
+          "极度恐慌",
+          "vix"
+        ]
+      ],
+      "ndx_close": 4038.6,
+      "actual_trading_date": "2015-08-24"
+    },
+    "2018-12-24": {
+      "emotion": "极度恐慌",
+      "triggered_conditions": [
+        [
+          "极度恐慌",
+          "vix_term"
+        ],
+        [
+          "极度恐慌",
+          "vix"
+        ]
+      ],
+      "ndx_close": 5899.35,
+      "actual_trading_date": "2018-12-24"
+    },
+    "2020-03-20": {
+      "emotion": "极度恐慌",
+      "triggered_conditions": [
+        [
+          "极度恐慌",
+          "vix_term"
+        ],
+        [
+          "极度恐慌",
+          "vix"
+        ],
+        [
+          "极度恐慌",
+          "spx_drawdown"
+        ]
+      ],
+      "ndx_close": 6994.29,
+      "actual_trading_date": "2020-03-20"
+    },
+    "2022-06-16": {
+      "emotion": "极度恐慌",
+      "triggered_conditions": [
+        [
+          "极度恐慌",
+          "ndx_drawdown"
+        ],
+        [
+          "极度恐慌",
+          "spx_drawdown"
+        ]
+      ],
+      "ndx_close": 11127.57,
+      "actual_trading_date": "2022-06-16"
+    },
+    "2023-11-01": {
+      "emotion": "中性",
+      "triggered_conditions": [],
+      "ndx_close": 14664.91,
+      "actual_trading_date": "2023-11-01"
+    }
+  },
+  "indicator_contribution": {
+    "vix_term": {
+      "trigger_count": 219,
+      "fear_count": 219,
+      "greed_count": 0,
+      "avg_fwd_5d_return": 1.2,
+      "avg_fwd_10d_return": 2.08,
+      "avg_fwd_20d_return": 4.0
+    },
+    "vix": {
+      "trigger_count": 271,
+      "fear_count": 271,
+      "greed_count": 0,
+      "avg_fwd_5d_return": 0.8,
+      "avg_fwd_10d_return": 1.74,
+      "avg_fwd_20d_return": 3.72
+    },
+    "spx_drawdown": {
+      "trigger_count": 291,
+      "fear_count": 291,
+      "greed_count": 0,
+      "avg_fwd_5d_return": 0.66,
+      "avg_fwd_10d_return": 1.18,
+      "avg_fwd_20d_return": 2.29
+    },
+    "ndx_drawdown": {
+      "trigger_count": 245,
+      "fear_count": 245,
+      "greed_count": 0,
+      "avg_fwd_5d_return": 0.1,
+      "avg_fwd_10d_return": 0.17,
+      "avg_fwd_20d_return": 0.22
+    },
+    "vix_low": {
+      "trigger_count": 333,
+      "fear_count": 0,
+      "greed_count": 333,
+      "avg_fwd_5d_return": -0.07,
+      "avg_fwd_10d_return": 0.02,
+      "avg_fwd_20d_return": 0.58
+    },
+    "spx_dev_ma200": {
+      "trigger_count": 464,
+      "fear_count": 0,
+      "greed_count": 464,
+      "avg_fwd_5d_return": 0.1,
+      "avg_fwd_10d_return": 0.3,
+      "avg_fwd_20d_return": 0.61
+    },
+    "ndx_dev_ma200": {
+      "trigger_count": 191,
+      "fear_count": 0,
+      "greed_count": 191,
+      "avg_fwd_5d_return": 0.05,
+      "avg_fwd_10d_return": -0.0,
+      "avg_fwd_20d_return": -0.74
+    }
+  },
+  "yearly_returns": {
+    "2015": {
+      "strategy": 0.012531,
+      "benchmark": 0.051912
+    },
+    "2016": {
+      "strategy": 0.023019,
+      "benchmark": 0.056242
+    },
+    "2017": {
+      "strategy": 0.216156,
+      "benchmark": 0.222442
+    },
+    "2018": {
+      "strategy": -0.093354,
+      "benchmark": -0.014933
+    },
+    "2019": {
+      "strategy": 0.235492,
+      "benchmark": 0.278879
+    },
+    "2020": {
+      "strategy": 0.212453,
+      "benchmark": 0.316713
+    },
+    "2021": {
+      "strategy": 0.122604,
+      "benchmark": 0.211959
+    },
+    "2022": {
+      "strategy": -0.298217,
+      "benchmark": -0.240432
+    },
+    "2023": {
+      "strategy": 0.349427,
+      "benchmark": 0.355823
+    },
+    "2024": {
+      "strategy": 0.124963,
+      "benchmark": 0.194674
+    },
+    "2025": {
+      "strategy": 0.104965,
+      "benchmark": 0.155819
+    },
+    "2026": {
+      "strategy": 0.049354,
+      "benchmark": 0.063311
+    }
+  },
+  "meta": {
+    "backtest_period": "2015-01-02 ~ 2026-04-30",
+    "total_trading_days": 2848,
+    "initial_capital": 1000000,
+    "data_sources": {
+      "ndxa200r_included": false
+    },
+    "indicator_status": {
+      "ndx": {
+        "name": "NDX收盘价",
+        "available": true,
+        "source": "yfinance"
+      },
+      "spx": {
+        "name": "SPX收盘价",
+        "available": true,
+        "source": "yfinance"
+      },
+      "vix": {
+        "name": "VIX",
+        "available": true,
+        "source": "yfinance"
+      },
+      "qqq": {
+        "name": "QQQ",
+        "available": true,
+        "source": "yfinance"
+      },
+      "spy": {
+        "name": "SPY",
+        "available": true,
+        "source": "yfinance"
+      },
+      "iwm": {
+        "name": "IWM",
+        "available": true,
+        "source": "yfinance"
+      },
+      "ndxa200r": {
+        "name": "NDX高于200日线比例",
+        "available": false,
+        "source": "yfinance"
+      },
+      "spxa200r": {
+        "name": "SPX高于200日线比例",
+        "available": false,
+        "source": "yfinance"
+      },
+      "dgs10": {
+        "name": "10年期国债",
+        "available": true,
+        "source": "FRED"
+      },
+      "vix3m": {
+        "name": "VIX3M",
+        "available": true,
+        "source": "FRED"
+      },
+      "hyspread": {
+        "name": "高收益利差",
+        "available": true,
+        "source": "FRED"
+      },
+      "onrrp": {
+        "name": "隔夜逆回购",
+        "available": true,
+        "source": "FRED"
+      }
+    }
+  }
+}
