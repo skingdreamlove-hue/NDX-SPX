@@ -314,7 +314,7 @@ function fetchYF(symbol){
 // 获取含历史收盘价的Yahoo数据
 function fetchYFHistory(symbol, range){
   var ctrl=new AbortController();
-  var tid=setTimeout(function(){ctrl.abort()},fetchTimeout*3);
+  var tid=setTimeout(function(){ctrl.abort()},15000);
   var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range='+(range||'1y');
   return fetch(url,{signal:ctrl.signal})
     .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
@@ -530,14 +530,14 @@ function fetchJSON(url,timeout){
 function loadLiveData(){
   setStatus(false,'获取实时数据...');
   return Promise.all([
-    fetchYF('^VIX'),
-    fetchYF('^VIX3M'),
-    fetchYF('QQQ'),
-    fetchYF('SPY'),
-    fetchYF('^TNX'),
-    fetchYFHistory('^NDX','1y'),
-    fetchYFHistory('^GSPC','1y'),
-    fetchYF('IWM')
+    fetchYF('^VIX').catch(function(){return null}),
+    fetchYF('^VIX3M').catch(function(){return null}),
+    fetchYF('QQQ').catch(function(){return null}),
+    fetchYF('SPY').catch(function(){return null}),
+    fetchYF('^TNX').catch(function(){return null}),
+    fetchYFHistory('^NDX','1y').catch(function(){return null}),
+    fetchYFHistory('^GSPC','1y').catch(function(){return null}),
+    fetchYF('IWM').catch(function(){return null})
   ]).then(function(r){
     yfData.vix=r[0];yfData.vix3m=r[1];yfData.qqq=r[2];yfData.spy=r[3];
     yfData.tnx=r[4];yfData.ndx=r[5];yfData.gspc=r[6];yfData.iwm=r[7];
@@ -550,7 +550,7 @@ function loadLiveData(){
 function buildSentimentUI(){
   var d=liveData||currentData;
   if(!d){
-    ('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
+    $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
     return
   }
   
@@ -655,7 +655,7 @@ function buildSentimentUI(){
     html+='<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+evHtml+'</div></div>'
   }
   
-  ('panelSentiment').innerHTML=html
+  $id('panelSentiment').innerHTML=htmll
 }
 
 // ── 基金数据功能（保持不变）──
@@ -811,7 +811,7 @@ function updateTradeStatus(){
   showToast('交易状态查询功能已整合到在线更新','info')
 }
 function refreshAll(){
-  var btn=('btnRefresh');btn.classList.add('spinning');
+  var btn=$id('btnRefresh');btn.classList.add('spinning');
   setStatus(false,'获取实时数据...');
   
   // 先尝试加载快照数据（作为回退），同时获取实时数据
@@ -829,7 +829,7 @@ function refreshAll(){
       liveData=null;
       buildSentimentUI();
     } else {
-      ('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
+      $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
     }
   }).finally(function(){
     btn.classList.remove('spinning');
@@ -838,7 +838,7 @@ function refreshAll(){
     var dd=String(now.getDate()).padStart(2,'0');
     var hh=String(now.getHours()).padStart(2,'0');
     var mi=String(now.getMinutes()).padStart(2,'0');
-    ('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi;
+    $id('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi;
   })
 }
 
@@ -852,4 +852,8 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 </body>
 </html>
+
+
+
+
 
