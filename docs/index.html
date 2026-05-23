@@ -268,9 +268,9 @@ var SIP_MULTIPLIER = { '极度恐慌': 5, '恐慌': 3, '中性': 1, '贪婪': 0,
 var DAILY_DCA = 300;
 
 // ── 工具函数 ──
-function (id){return document.getElementById(id)}
-function showToast(msg,type){var t=('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(function(){t.className='toast'},3000)}
-function setStatus(live,msg){if(live){('statusDot').className='status-dot live'}else{('statusDot').className='status-dot stale'}('statusText').textContent=msg}
+function $id(id){return document.getElementById(id)}
+function showToast(msg,type){var t=$id('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(function(){t.className='toast'},3000)}
+function setStatus(live,msg){if(live){$id('statusDot').className='status-dot live'}else{$id('statusDot').className='status-dot stale'}$id('statusText').textContent=msg}
 function switchTab(name){
   if(name==='restriction'){loadFundData()}
   currentTab=name;
@@ -655,7 +655,7 @@ function buildSentimentUI(){
     html+='<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+evHtml+'</div></div>'
   }
   
-  $id('panelSentiment').innerHTML=htmll
+  $id('panelSentiment').innerHTML=html
 }
 
 // ── 基金数据功能（保持不变）──
@@ -672,7 +672,7 @@ function loadFundData(){
 function buildRestrictionUI(){
   if(!fundData||fundData.length===0){
     var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据，点击右侧从API获取</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
-    ('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
+    $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
   }
   var nasdaq=[],sp500=[];
   for(var i=0;i<fundData.length;i++){
@@ -705,7 +705,7 @@ function buildRestrictionUI(){
     +renderGroup('纳斯达克100',nasdaq)
     +'<div class="fund-group-title" style="margin-top:16px">标普500<span class="fund-group-count">'+sp500.length+'只基金</span></div>'
     +renderGroup('标普500',sp500);
-  ('panelRestriction').innerHTML=html
+  $id('panelRestriction').innerHTML=html
 }
 
 // ── 刷新主入口 ──
