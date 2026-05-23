@@ -177,6 +177,25 @@ def main():
 
     last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # 尝试加载 daily_log.json 保留历史记录
+    recent_signals = []
+    daily_log_path = BASE_DIR / "daily_log.json"
+    if daily_log_path.exists():
+        try:
+            with open(daily_log_path, "r", encoding="utf-8") as f:
+                daily_log = json.load(f)
+            if isinstance(daily_log, list):
+                for entry in daily_log[-10:]:
+                    signal = entry.get("signal", {})
+                    recent_signals.append({
+                        "date": entry.get("date", ""),
+                        "emotion": signal.get("emotion", ""),
+                        "position": signal.get("target_position", ""),
+                        "action": signal.get("action", ""),
+                    })
+        except Exception:
+            pass
+
     indicators = {
         "current_vix": vix,
         "nasdaq100_drawdown": ndx_drawdown,
@@ -232,9 +251,31 @@ def main():
         f.write(";\n")
     print(f"  [OK] {docs_js_path}")
 
-    # 写入 docs/data/latest.json
+    # 写入 docs/data/latest.json（同时输出扁平格式供手机页面消费）
     mobile_data = {
         "_generated": last_update,
+        # 扁平字段（手机页面直接使用）
+        "sentiment_result": emotion,
+        "signal_strength": strength,
+        "sentiment_conditions": [],
+        "position_advice": pos_advice,
+        "target_position": target_pos,
+        "daily_buy_amount": daily_buy,
+        "current_vix": vix,
+        "vix_term_ratio": vix_term,
+        "current_nasdaq100": ndx_price,
+        "current_sp500": spx_price,
+        "nasdaq100_drawdown": ndx_drawdown,
+        "sp500_drawdown": spx_drawdown,
+        "nasdaq100_dev_ma200": ndx_dev_ma200,
+        "sp500_dev_ma200": spx_dev_ma200,
+        "ndx_spx_ratio": ndx_spx_ratio,
+        "iwm_spy_ratio": iwm_spy_ratio,
+        "tnx_ma50_diff": tnx_ma50_diff,
+        "rate_shock": is_rate_shock,
+        "is_live": False,
+        "last_update": last_update,
+        # 嵌套结构（兼容 export_mobile_data.py 格式）
         "sentiment": {
             "level": emotion,
             "strength": strength,
@@ -260,7 +301,8 @@ def main():
             "ndx_spx_ratio": ndx_spx_ratio,
             "iwm_spy_ratio": iwm_spy_ratio,
         },
-        "last_update": last_update,
+        # 历史记录
+        "recent_signals": recent_signals,
     }
 
     mobile_dir = BASE_DIR / "docs" / "data"

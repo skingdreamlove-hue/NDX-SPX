@@ -819,7 +819,8 @@ function mergeApiData(apiResults, okCount){
     var f=fundData[i],api=apiResults[i];
     if(api&&api.data&&api.data.diff&&api.data.diff.length>0){
       var d=api.data.diff[0];
-      f['近1年']=d.f3!=null?d.f3.toFixed(2)+'%':f['近1年'];
+      // d.f3 是日涨跌幅，不要覆盖缓存中的"近1年"
+      f['日涨跌幅']=d.f3!=null?d.f3.toFixed(2)+'%':'--';
       f['实时净值']=d.f2;
       f.基金代码=''+d.f12;
       f._apiSource=true
