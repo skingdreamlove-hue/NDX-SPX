@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#0a0e17">
 <meta name="apple-mobile-web-app-title" content="美股情绪">
 <link rel="manifest" href="manifest.json">
+<script src="market_data.js"></script>
 <title>美股情绪监测</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -422,6 +423,12 @@ function calcRateShock(tnxMa50Diff){
 
 // ── 从Yahoo实时数据计算情绪 ──
 function computeLiveSentiment(){
+  // 检查是否真的获取到了实时数据（Yahoo在浏览器端常被CORS拦截）
+  var hasLive=yfData.vix||yfData.qqq||yfData.spy||(yfData.ndx&&yfData.ndx.price);
+  if(!hasLive){
+    liveData=null;
+    return null
+  }
   // 获取NDX和GSPC的历史价格
   var ndx=yfData.ndx, gspc=yfData.gspc;
   var tnx=yfData.tnx;
@@ -509,13 +516,66 @@ function computeLiveSentiment(){
 }
 
 // ── 数据加载 ──
+function convertMarketData(md){
+  if(!md)return null;
+  return {
+    sentiment_result: md.sentiment_result||'中性',
+    signal_strength: md.signal_strength||'★ 弱',
+    sentiment_conditions: md.sentiment_conditions||[],
+    position_advice: md.position_advice||'--',
+    target_position: md.target_position||50,
+    daily_buy_amount: md.daily_buy_amount||300,
+    current_vix: md.current_vix,
+    current_nasdaq100: md.current_nasdaq100||md.nasdaq100_current,
+    current_sp500: md.current_sp500||md.sp500_current,
+    nasdaq100_dev_ma200: md.nasdaq100_deviation_200ma,
+    sp500_dev_ma200: md.sp500_deviation_200ma,
+    nasdaq100_drawdown: md.nasdaq100_drawdown,
+    sp500_drawdown: md.sp500_drawdown,
+    vix_term_ratio: md.vix_term_ratio,
+    ndx_breadth_200ma: md.ndx_breadth_200ma,
+    ndx_spx_ratio: md.ndx_spx_ratio,
+    iwm_spy_ratio: md.iwm_spy_ratio,
+    tnx_ma50_diff: md.tnx_ma50_diff,
+    rate_shock: md.is_rate_shock||false,
+    is_live: false,
+    last_update: md.last_update,
+    indicators: {
+      vix: md.current_vix,
+      vix_term_ratio: md.vix_term_ratio,
+      ndx_breadth_200ma: md.ndx_breadth_200ma,
+      ndx_spx_ratio: md.ndx_spx_ratio,
+      iwm_spy_ratio: md.iwm_spy_ratio,
+      tnx_ma50_diff: md.tnx_ma50_diff,
+      qqq_pcr: md.qqq_pcr,
+      spy_pcr: md.spy_pcr,
+      credit_spread: md.credit_spread,
+      sp500_breadth_200ma: md.sp500_breadth_200ma,
+      on_rrp_current: md.on_rrp_current
+    },
+    indices: {
+      nasdaq100: md.current_nasdaq100||md.nasdaq100_current,
+      sp500: md.current_sp500||md.sp500_current,
+      nasdaq100_dev_ma200: md.nasdaq100_deviation_200ma,
+      sp500_dev_ma200: md.sp500_deviation_200ma,
+      nasdaq100_drawdown: md.nasdaq100_drawdown,
+      sp500_drawdown: md.sp500_drawdown
+    }
+  };
+}
+
 function loadStaticData(){
   return fetchJSON(DATA_URL).then(function(d){
     currentData=d;
     return d
   }).catch(function(e){
-    currentData=null;
-    return null
+    // 回退到 market_data.js 中的静态数据
+    if(typeof MARKET_DATA !== 'undefined'){
+      currentData=convertMarketData(MARKET_DATA);
+    }else{
+      currentData=null;
+    }
+    return currentData
   })
 }
 
@@ -542,7 +602,7 @@ function loadLiveData(){
     yfData.vix=r[0];yfData.vix3m=r[1];yfData.qqq=r[2];yfData.spy=r[3];
     yfData.tnx=r[4];yfData.ndx=r[5];yfData.gspc=r[6];yfData.iwm=r[7];
     var c=r.filter(function(x){return x!=null}).length;
-    setStatus(true,'实时: '+c+'/'+r.length+' 数据源');
+    setStatus(c>0,'Yahoo: '+c+'/'+r.length);
   })
 }
 
@@ -588,7 +648,7 @@ function buildSentimentUI(){
     if(!spxDraw) spxDraw=sd.indices&&sd.indices.sp500_drawdown;
     if(!vixTerm) vixTerm=sd.indicators&&sd.indicators.vix_term_ratio;
     if(!ndxBreadth) ndxBreadth=sd.indicators&&sd.indicators.ndx_breadth_200ma;
-    if(!ndxSpxRatio) ndxSpxRatio=sd.indicators&&sd.indicators.ndx_apx_ratio;
+    if(!ndxSpxRatio) ndxSpxRatio=sd.indicators&&sd.indicators.ndx_spx_ratio;
     if(!iwmSpyRatio) iwmSpyRatio=sd.indicators&&sd.indicators.iwm_spy_ratio;
     if(!tnxDev) tnxDev=sd.indicators&&sd.indicators.tnx_ma50_diff;
   }
@@ -821,6 +881,9 @@ function refreshAll(){
   ]).then(function(){
     // 使用实时数据计算情绪
     computeLiveSentiment();
+    if(!liveData && currentData){
+      setStatus(false,'静态数据'+(currentData.last_update?' ('+currentData.last_update+')':''));
+    }
     buildSentimentUI();
   }).catch(function(e){
     console.error(e);
@@ -833,12 +896,18 @@ function refreshAll(){
     }
   }).finally(function(){
     btn.classList.remove('spinning');
-    var now=new Date();
-    var mm=String(now.getMonth()+1).padStart(2,'0');
-    var dd=String(now.getDate()).padStart(2,'0');
-    var hh=String(now.getHours()).padStart(2,'0');
-    var mi=String(now.getMinutes()).padStart(2,'0');
-    $id('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi;
+    // 显示数据实际更新时间（静态数据用 last_update，实时数据用当前时间）
+    var d=liveData||currentData;
+    if(d&&d.last_update){
+      $id('updateTime').textContent=d.last_update;
+    }else{
+      var now=new Date();
+      var mm=String(now.getMonth()+1).padStart(2,'0');
+      var dd=String(now.getDate()).padStart(2,'0');
+      var hh=String(now.getHours()).padStart(2,'0');
+      var mi=String(now.getMinutes()).padStart(2,'0');
+      $id('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi;
+    }
   })
 }
 
