@@ -1,0 +1,19 @@
+{
+  "name": "美股情绪监测",
+  "short_name": "美股情绪",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "description": "美股纳斯达克100 & 标普500情绪监测工具",
+  "orientation": "portrait",
+  "icons": [{
+    "src": "icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }, {
+    "src": "icon-512.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }]
+}

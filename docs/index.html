@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e17">
+<meta name="apple-mobile-web-app-title" content="美股情绪">
+<link rel="manifest" href="manifest.json">
+<title>美股情绪监测</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-primary:#0a0e17;
+  --bg-card:#131824;
+  --bg-card-hover:#1a2032;
+  --text-primary:#e8eaed;
+  --text-secondary:#9aa0a6;
+  --text-muted:#5f6368;
+  --border-card:#1e2a3a;
+  --green:#34a853;
+  --green-bg:rgba(52,168,83,0.12);
+  --green-border:rgba(52,168,83,0.3);
+  --red:#ea4335;
+  --red-bg:rgba(234,67,53,0.12);
+  --red-border:rgba(234,67,53,0.3);
+  --orange:#f9ab00;
+  --orange-bg:rgba(249,171,0,0.12);
+  --orange-border:rgba(249,171,0,0.3);
+  --yellow:#fbbc04;
+  --blue:#4285f4;
+  --blue-bg:rgba(66,133,244,0.12);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  min-height:100vh;
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  padding-bottom:calc(24px + var(--safe-bottom));
+}
+
+.header{
+  position:sticky;top:0;z-index:100;
+  background:var(--bg-primary);
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-card);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-title{font-size:17px;font-weight:700;letter-spacing:.3px}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-update{font-size:11px;color:var(--text-muted)}
+.btn-refresh{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--border-card);background:var(--bg-card);
+  color:var(--text-secondary);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s
+}
+.btn-refresh:active{background:var(--bg-card-hover);transform:scale(.95)}
+.btn-refresh.spinning svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.status-bar{
+  padding:6px 16px;font-size:10px;color:var(--text-muted);
+  display:flex;align-items:center;gap:6px
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted)}
+.status-dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.stale{background:var(--orange)}
+
+.container{padding:8px 12px}
+
+.card{
+  background:var(--bg-card);border:1px solid var(--border-card);
+  border-radius:14px;padding:16px;margin-bottom:10px
+}
+
+.signal-hero{
+  text-align:center;padding:20px 16px 16px;
+  border-width:2px
+}
+.signal-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.signal-emotion{font-size:32px;font-weight:800;margin-bottom:4px}
+.signal-strength{font-size:13px;margin-bottom:10px}
+.signal-note{font-size:11px;color:var(--text-muted);line-height:1.5}
+
+.signal-fear{color:var(--green);border-color:var(--green-border)}
+.signal-fear .card,.signal-fear.signal-hero{background:var(--green-bg)}
+.signal-greed{color:var(--red);border-color:var(--red-border)}
+.signal-greed .card,.signal-greed.signal-hero{background:var(--red-bg)}
+.signal-neutral{color:var(--yellow);border-color:var(--orange-border)}
+.signal-neutral .card,.signal-neutral.signal-hero{background:var(--orange-bg)}
+
+.position-row{display:flex;gap:12px;flex-wrap:wrap}
+.position-item{flex:1;min-width:0;text-align:center}
+.position-val{font-size:22px;font-weight:700;margin-bottom:2px}
+.position-label{font-size:11px;color:var(--text-muted)}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric-item{
+  background:var(--bg-card);border:1px solid var(--border-card);
+  border-radius:10px;padding:12px
+}
+.metric-name{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.metric-val{font-size:17px;font-weight:600}
+.metric-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+.index-compare{display:flex;gap:12px}
+.index-block{flex:1;text-align:center}
+.index-name{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.index-price{font-size:18px;font-weight:700}
+.index-dev{font-size:11px;margin-top:3px}
+
+.recent-list{}
+.recent-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid var(--border-card)
+}
+.recent-item:last-child{border-bottom:none}
+.recent-date{font-size:11px;color:var(--text-muted);width:80px}
+.recent-emotion{font-size:12px;font-weight:600;width:58px}
+.recent-position{font-size:12px;color:var(--text-secondary);width:50px;text-align:center}
+.recent-action{font-size:11px;color:var(--text-muted);text-align:right}
+
+.tag{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:600
+}
+.tag-green{background:var(--green-bg);color:var(--green)}
+.tag-red{background:var(--red-bg);color:var(--red)}
+.tag-yellow{background:var(--orange-bg);color:var(--orange)}
+.tag-blue{background:var(--blue-bg);color:var(--blue)}
+
+.toast{
+  position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  background:#333;color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:13px;z-index:999;opacity:0;transition:opacity .3s;
+  pointer-events:none
+}
+.toast.show{opacity:1}
+
+.loading{text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px}
+.error-box{text-align:center;padding:24px 16px}
+.error-box .msg{color:var(--red);font-size:14px;margin-bottom:12px}
+.error-box button{
+  background:var(--bg-card);border:1px solid var(--border-card);
+  color:var(--text-primary);padding:8px 24px;border-radius:20px;font-size:13px;cursor:pointer
+}
+
+.footer{text-align:center;padding:16px;font-size:10px;color:var(--text-muted)}
+
+.up{color:var(--green)}.down{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">美股情绪监测</div>
+  <div class="header-right">
+    <span class="header-update" id="updateTime">加载中...</span>
+    <button class="btn-refresh" id="btnRefresh" onclick="refreshAll()" aria-label="刷新">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="status-bar" id="statusBar"><span class="status-dot" id="statusDot"></span><span id="statusText">加载中...</span></div>
+<div class="container" id="mainContent"><div class="loading">加载中，请稍候...</div></div>
+<div class="footer">美股情绪监测 · 手机版 · 数据仅供参考</div>
+
+<script>
+var CACHE_NAME = 'ussentiment-v5';
+var STATIC_ASSETS = ['manifest.json'];
+
+var DATA_URL = 'data/latest.json';
+var currentData = null;
+var yfData = {};
+var fetchTimeout = 12000;
+
+function $id(id){return document.getElementById(id)}
+
+function showToast(msg){
+  var t = $id('toast');
+  t.textContent = msg;t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function(){t.classList.remove('show')},2000)
+}
+
+function getSentimentClass(level){
+  if(!level) return 'signal-neutral';
+  if(level.indexOf('恐慌')>=0) return 'signal-fear';
+  if(level.indexOf('贪婪')>=0) return 'signal-greed';
+  return 'signal-neutral'
+}
+
+function getEmotionColorClass(level){
+  if(!level) return 'tag-yellow';
+  if(level.indexOf('恐慌')>=0) return 'tag-green';
+  if(level.indexOf('贪婪')>=0) return 'tag-red';
+  return 'tag-yellow'
+}
+
+function fmtPct(v){
+  if(v==null||v===undefined) return '---';
+  var n=Number(v);
+  var c=n>=0?'up':'down';
+  return '<span class="'+c+'">'+(n>=0?'+':'')+n.toFixed(2)+'%</span>'
+}
+
+function fmtNum(v,d){
+  if(v==null||v===undefined) return '---';
+  return Number(v).toFixed(d||0)
+}
+
+function setStatus(live,text){
+  var dot=$id('statusDot'),txt=$id('statusText');
+  dot.className='status-dot '+(live?'live':'');
+  txt.textContent=text||''
+}
+
+function fetchJSON(url,timeout){
+  var ctrl=new AbortController();
+  var tid=setTimeout(function(){ctrl.abort()},timeout||fetchTimeout);
+  return fetch(url,{signal:ctrl.signal,cache:'no-cache'})
+    .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
+    .catch(function(e){clearTimeout(tid);throw e})
+}
+
+function fetchYF(symbol){
+  var ctrl=new AbortController();
+  var tid=setTimeout(function(){ctrl.abort()},fetchTimeout);
+  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=5d';
+  return fetch(url,{signal:ctrl.signal})
+    .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
+    .then(function(d){
+      var meta=d.chart.result[0].meta;
+      var quote=d.chart.result[0].indicators.quote[0];
+      var n=quote.close.length;
+      return {
+        symbol:symbol,
+        price:quote.close[n-1],
+        prevClose:meta.chartPreviousClose,
+        high:meta.regularMarketDayHigh,
+        low:meta.regularMarketDayLow,
+      }
+    })
+    .catch(function(e){clearTimeout(tid);return null})
+}
+
+function loadStaticData(){
+  return fetchJSON(DATA_URL)
+    .then(function(d){
+      currentData=d;
+      if(d.last_update){
+        $id('updateTime').textContent=d.last_update.slice(5,16)
+      }
+      setStatus(false,'桌面端数据: '+ (d.last_update||'未知'))
+      return d
+    })
+    .catch(function(e){
+      setStatus(false,'无法加载数据')
+      throw e
+    })
+}
+
+function loadLiveData(){
+  setStatus(false,'获取实时数据...')
+  return Promise.all([
+    fetchYF('^VIX'),
+    fetchYF('^VIX3M'),
+    fetchYF('QQQ'),
+    fetchYF('SPY'),
+    fetchYF('^TNX'),
+  ]).then(function(results){
+    yfData.vix=results[0]
+    yfData.vix3m=results[1]
+    yfData.qqq=results[2]
+    yfData.spy=results[3]
+    yfData.tnx=results[4]
+    var liveCount=(results[0]?1:0)+(results[1]?1:0)+(results[2]?1:0)+(results[3]?1:0)+(results[4]?1:0)
+    if(liveCount>=3){
+      setStatus(true,'实时数据已更新')
+    }else{
+      setStatus(false,liveCount+'/'+5+' 项实时数据可用')
+    }
+  })
+}
+
+function buildUI(){
+  if(!currentData){
+    $id('mainContent').innerHTML='<div class="error-box"><div class="msg">数据加载失败</div><button onclick="refreshAll()">重试</button></div>'
+    return
+  }
+  var d=currentData,s=d.sentiment||{},p=d.position||{},ix=d.indices||{},ind=d.indicators||{}
+
+  var sCls=getSentimentClass(s.level)
+  var emoCls=getEmotionColorClass(s.level)
+
+  var vix=ind.vix!=null?ind.vix.toFixed(2):'---'
+  var vixLive=yfData.vix&&yfData.vix.price!=null?yfData.vix.price.toFixed(2):null
+  var vixDisp=vixLive||vix
+  var vixChange=vixLive&&ind.vix?((yfData.vix.price-ind.vix)/ind.vix*100).toFixed(1):null
+
+  var vixTerm=ind.vix_term_ratio!=null?ind.vix_term_ratio.toFixed(2):'---'
+  var creditSpread=ind.credit_spread!=null?ind.credit_spread.toFixed(2)+'%':'---'
+  var qqqPcr=ind.qqq_pcr!=null?ind.qqq_pcr.toFixed(2):'---'
+  var spyPcr=ind.spy_pcr!=null?ind.spy_pcr.toFixed(2):'---'
+  var breadthNdx=ind.ndx_breadth_200ma!=null?ind.ndx_breadth_200ma.toFixed(1)+'%':'---'
+  var breadthSpx=ind.sp500_breadth_200ma!=null?ind.sp500_breadth_200ma.toFixed(1)+'%':'---'
+  var ndxSpxRatio=ind.ndx_spx_ratio!=null?ind.ndx_spx_ratio.toFixed(2):'---'
+  var tnxDev=ind.tnx_ma50_diff!=null?ind.tnx_ma50_diff.toFixed(1)+'%':'---'
+  var onRrp=ind.on_rrp_current!=null?ind.on_rrp_current.toFixed(2)+'T':'---'
+
+  var ndxPrice=ix.nasdaq100!=null?fmtNum(ix.nasdaq100,0):'---'
+  var spxPrice=ix.sp500!=null?fmtNum(ix.sp500,0):'---'
+  var ndxDev=ix.nasdaq100_dev_ma200!=null?fmtPct(ix.nasdaq100_dev_ma200):'---'
+  var spxDev=ix.sp500_dev_ma200!=null?fmtPct(ix.sp500_dev_ma200):'---'
+  var ndxDd=ix.nasdaq100_drawdown!=null?fmtPct(ix.nasdaq100_drawdown):'---'
+  var spxDd=ix.sp500_drawdown!=null?fmtPct(ix.sp500_drawdown):'---'
+
+  var ndxPriceLive=yfData.qqq&&yfData.qqq.price!=null?yfData.qqq.price.toFixed(0):null
+  var spxPriceLive=yfData.spy&&yfData.spy.price!=null?yfData.spy.price.toFixed(0):null
+
+  var eventsHtml=''
+  var events=d.recent_signals||[]
+  for(var i=events.length-1;i>=0;i--){
+    var ev=events[i]
+    var eCls=getEmotionColorClass(ev.emotion)
+    eventsHtml+='<div class="recent-item">'
+      +'<span class="recent-date">'+ev.date.slice(-5)+'</span>'
+      +'<span class="recent-emotion '+eCls+'">'+ev.emotion+'</span>'
+      +'<span class="recent-position">'+ev.position+'</span>'
+      +'<span class="recent-action">'+ev.action+'</span>'
+      +'</div>'
+  }
+
+  var condTags=''
+  if(s.conditions&&s.conditions.length>0){
+    for(var ci=0;ci<s.conditions.length;ci++){
+      condTags+='<span class="tag '+emoCls+'">'+s.conditions[ci]+'</span> '
+    }
+  }
+
+  var html=''
+  +'<div class="card signal-hero '+sCls+'">'
+    +'<div class="signal-label">当前情绪</div>'
+    +'<div class="signal-emotion">'+s.level+'</div>'
+    +'<div class="signal-strength">信号强度: '+s.strength+'</div>'
+    +(condTags?'<div style="margin-top:8px">触发条件: '+condTags+'</div>':'')
+  +'</div>'
+
+  +'<div class="card">'
+    +'<div class="position-row">'
+      +'<div class="position-item"><div class="position-label">目标仓位</div><div class="position-val">'+p.target+'%</div></div>'
+      +'<div class="position-item"><div class="position-label">每日定投</div><div class="position-val">$'+p.daily_buy+'</div></div>'
+      +'<div class="position-item"><div class="position-label">操作建议</div><div class="position-val" style="font-size:16px">'+p.advice+'</div></div>'
+    +'</div>'
+  +'</div>'
+
+  +'<div class="card">'
+    +'<div class="index-compare">'
+      +'<div class="index-block">'
+        +'<div class="index-name">纳斯达克100</div>'
+        +'<div class="index-price">'+(ndxPriceLive||ndxPrice)+'</div>'
+        +'<div class="index-dev">MA200偏差 '+ndxDev+'</div>'
+        +'<div class="index-dev">距高点 '+ndxDd+'</div>'
+      +'</div>'
+      +'<div class="index-block">'
+        +'<div class="index-name">标普500</div>'
+        +'<div class="index-price">'+(spxPriceLive||spxPrice)+'</div>'
+        +'<div class="index-dev">MA200偏差 '+spxDev+'</div>'
+        +'<div class="index-dev">距高点 '+spxDd+'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>'
+
+  +'<div class="metrics-grid">'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">VIX 恐慌指数</div>'
+      +'<div class="metric-val">'+vixDisp+(vixChange&&Math.abs(vixChange)>=0.5?' <span style="font-size:11px;'+(vixChange>0?'color:var(--red)':'color:var(--green)')+'">'+(vixChange>0?'↑':'↓')+Math.abs(vixChange)+'%</span>':'')+'</div>'
+      +'<div class="metric-sub">期限比: '+vixTerm+'</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">信用利差</div>'
+      +'<div class="metric-val">'+creditSpread+'</div>'
+      +'<div class="metric-sub">高收益债利差</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">Put/Call 比 QQQ</div>'
+      +'<div class="metric-val">'+qqqPcr+'</div>'
+      +'<div class="metric-sub">低位=乐观 高位=恐慌</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">Put/Call 比 SPY</div>'
+      +'<div class="metric-val">'+spyPcr+'</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">NDX高于200日线</div>'
+      +'<div class="metric-val">'+breadthNdx+'</div>'
+      +'<div class="metric-sub">成分股市场广度</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">SPX高于200日线</div>'
+      +'<div class="metric-val">'+breadthSpx+'</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">NDX/SPX 比值</div>'
+      +'<div class="metric-val">'+ndxSpxRatio+'</div>'
+      +'<div class="metric-sub">科技vs大盘相对强弱</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">10Y国债偏离MA50</div>'
+      +'<div class="metric-val">'+tnxDev+'</div>'
+      +'<div class="metric-sub">利率冲击预警 >10%</div>'
+    +'</div>'
+    +'<div class="metric-item">'
+      +'<div class="metric-name">ON RRP 余额</div>'
+      +'<div class="metric-val">'+onRrp+'</div>'
+      +'<div class="metric-sub">美联储隔夜逆回购</div>'
+    +'</div>'
+  +'</div>'
+
+  +(events.length>0?'<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+eventsHtml+'</div></div>':'')
+
+  $id('mainContent').innerHTML=html
+}
+
+function refreshAll(){
+  var btn=$id('btnRefresh')
+  btn.classList.add('spinning')
+
+  loadStaticData()
+    .then(function(){return loadLiveData()})
+    .then(function(){buildUI()})
+    .catch(function(e){
+      console.error(e)
+      if(!currentData){
+        $id('mainContent').innerHTML='<div class="error-box"><div class="msg">数据加载失败，请检查网络</div><button onclick="refreshAll()">重试</button></div>'
+      }else{
+        buildUI()
+      }
+    })
+    .finally(function(){
+      btn.classList.remove('spinning')
+    })
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){})
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  refreshAll()
+  setInterval(refreshAll,5*60*1000)
+})
+</script>
+</body>
+</html>

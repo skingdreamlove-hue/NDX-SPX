@@ -1,0 +1,142 @@
+{
+  "_generated": "2026-05-23 10:55:51",
+  "sentiment": {
+    "level": "中性",
+    "strength": "★ 弱",
+    "conditions": []
+  },
+  "position": {
+    "advice": "目标仓位 100% / 当前仓位 100% / 持有",
+    "target": 100,
+    "daily_buy": 300.0
+  },
+  "indices": {
+    "nasdaq100": 29492.3,
+    "sp500": 7480.98,
+    "nasdaq100_drawdown": -0.63,
+    "sp500_drawdown": -0.48,
+    "nasdaq100_dev_ma200": 16.76,
+    "sp500_dev_ma200": 9.89
+  },
+  "indicators": {
+    "vix": 16.92,
+    "vix_term_ratio": 0.84,
+    "credit_spread": 2.78,
+    "tnx_ma50_diff": 4.24,
+    "qqq_pcr": 1.66,
+    "spy_pcr": 2.25,
+    "ndx_spx_ratio": 3.9423,
+    "iwm_spy_ratio": 0.3819,
+    "sp500_breadth_200ma": 55.17,
+    "ndx_breadth_200ma": 57.42,
+    "on_rrp_current": 3.28,
+    "on_rrp_deviation": 290.8,
+    "buffett_indicator": 158.0
+  },
+  "recent_signals": [
+    {
+      "date": "2026-05-08",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-11",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-12",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-13",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-14",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-15",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-18",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-19",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-20",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    },
+    {
+      "date": "2026-05-21",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "持有"
+    }
+  ],
+  "pcr_trend": [],
+  "vix_term_trend": [
+    {
+      "date": "2026-05-04",
+      "ratio": 0.84
+    },
+    {
+      "date": "2026-05-06",
+      "ratio": 0.85
+    },
+    {
+      "date": "2026-05-07",
+      "ratio": 0.84
+    },
+    {
+      "date": "2026-05-11",
+      "ratio": 0.87
+    },
+    {
+      "date": "2026-05-12",
+      "ratio": 0.86
+    },
+    {
+      "date": "2026-05-14",
+      "ratio": 0.83
+    },
+    {
+      "date": "2026-05-18",
+      "ratio": 0.85
+    },
+    {
+      "date": "2026-05-19",
+      "ratio": 0.86
+    },
+    {
+      "date": "2026-05-20",
+      "ratio": 0.84
+    },
+    {
+      "date": "2026-05-21",
+      "ratio": 0.84
+    }
+  ],
+  "last_update": "2026-05-22 22:04:28"
+}
