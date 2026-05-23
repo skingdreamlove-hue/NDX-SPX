@@ -1,5 +1,4 @@
 import os
-os.environ['FRED_API_KEY'] = 'd40fd4a2d5828821544a84b9314586ea'
 import json
 import math
 import tempfile
