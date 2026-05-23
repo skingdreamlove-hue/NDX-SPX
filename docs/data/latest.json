@@ -1,5 +1,25 @@
 {
-  "_generated": "2026-05-23 21:31:13",
+  "_generated": "2026-05-23 13:50:23",
+  "sentiment_result": "中性",
+  "signal_strength": "★ 弱",
+  "sentiment_conditions": [],
+  "position_advice": "目标仓位 100% / 当前仓位 100% / 持有",
+  "target_position": 100,
+  "daily_buy_amount": 300.0,
+  "current_vix": 16.700000762939453,
+  "vix_term_ratio": 0.8337493854442927,
+  "current_nasdaq100": 29481.640625,
+  "current_sp500": 7473.47021484375,
+  "nasdaq100_drawdown": -0.66,
+  "sp500_drawdown": -0.58,
+  "nasdaq100_dev_ma200": 16.72,
+  "sp500_dev_ma200": 9.78,
+  "ndx_spx_ratio": 0.2535,
+  "iwm_spy_ratio": 0.0382,
+  "tnx_ma50_diff": 4.29,
+  "rate_shock": false,
+  "is_live": false,
+  "last_update": "2026-05-23 13:50:23",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -11,27 +31,19 @@
     "daily_buy": 300.0
   },
   "indices": {
-    "nasdaq100": 29481.64,
-    "sp500": 7473.47,
+    "nasdaq100": 29481.640625,
+    "sp500": 7473.47021484375,
     "nasdaq100_drawdown": -0.66,
     "sp500_drawdown": -0.58,
     "nasdaq100_dev_ma200": 16.72,
     "sp500_dev_ma200": 9.78
   },
   "indicators": {
-    "vix": 16.7,
-    "vix_term_ratio": 0.83,
-    "credit_spread": 2.78,
-    "tnx_ma50_diff": 4.28,
-    "qqq_pcr": 1.61,
-    "spy_pcr": 2.21,
-    "ndx_spx_ratio": 3.9448,
-    "iwm_spy_ratio": 0.3824,
-    "sp500_breadth_200ma": 56.37,
-    "ndx_breadth_200ma": 57.42,
-    "on_rrp_current": 0.96,
-    "on_rrp_deviation": 14.7,
-    "buffett_indicator": 158.0
+    "vix": 16.700000762939453,
+    "vix_term_ratio": 0.8337493854442927,
+    "tnx_ma50_diff": 4.29,
+    "ndx_spx_ratio": 0.2535,
+    "iwm_spy_ratio": 0.0382
   },
   "recent_signals": [
     {
@@ -94,49 +106,5 @@
       "position": "100%",
       "action": "持有"
     }
-  ],
-  "pcr_trend": [],
-  "vix_term_trend": [
-    {
-      "date": "2026-05-04",
-      "ratio": 0.84
-    },
-    {
-      "date": "2026-05-06",
-      "ratio": 0.85
-    },
-    {
-      "date": "2026-05-07",
-      "ratio": 0.84
-    },
-    {
-      "date": "2026-05-11",
-      "ratio": 0.87
-    },
-    {
-      "date": "2026-05-12",
-      "ratio": 0.86
-    },
-    {
-      "date": "2026-05-14",
-      "ratio": 0.83
-    },
-    {
-      "date": "2026-05-18",
-      "ratio": 0.85
-    },
-    {
-      "date": "2026-05-19",
-      "ratio": 0.86
-    },
-    {
-      "date": "2026-05-20",
-      "ratio": 0.84
-    },
-    {
-      "date": "2026-05-21",
-      "ratio": 0.84
-    }
-  ],
-  "last_update": "2026-05-23 20:43:50"
+  ]
 }
