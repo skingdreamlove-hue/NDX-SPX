@@ -181,6 +181,20 @@ body{
   display:flex;justify-content:space-between;align-items:center;font-size:12px
 }
 .fund-summary-val{font-weight:700;color:var(--blue)}
+.fund-update-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin-bottom:4px}
+.btn-fund-update{
+  background:var(--blue-bg);border:1px solid rgba(66,133,244,0.3);
+  color:var(--blue);padding:6px 16px;border-radius:16px;font-size:12px;
+  cursor:pointer;font-weight:600;transition:all .2s
+}
+.btn-fund-update:active{transform:scale(.95);opacity:.8}
+.btn-fund-update:disabled{opacity:.5;cursor:not-allowed}
+.fund-progress{width:100%;height:3px;background:var(--border-card);border-radius:2px;margin-top:6px;overflow:hidden;display:none}
+.fund-progress.active{display:block}
+.fund-progress-bar{height:100%;background:var(--blue);border-radius:2px;transition:width .3s;width:0}
+.fund-source-tag{font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle}
+.fund-source-api{background:rgba(52,168,83,0.15);color:#34a853}
+.fund-source-local{background:rgba(249,171,0,0.15);color:#f9ab00}
 </style>
 </head>
 <body>
@@ -222,6 +236,54 @@ var fundData = [];
 var yfData = {};
 var fetchTimeout = 12000;
 var currentTab = 'sentiment';
+var fundApiUpdating = false;
+var fundApiTime = null;
+
+var FUND_INFO = {
+  "270042": {"name": "广发纳斯达克100ETF联接人民币(QDII)A", "type": "A", "purchase": "1.30%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.13%", "category": "nasdaq"},
+  "040046": {"name": "华安纳斯达克100ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "018043": {"name": "天弘纳斯达克100指数发起(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.70%", "category": "nasdaq"},
+  "016532": {"name": "嘉实纳斯达克100ETF发起联接(QDII)人民币A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.70%", "category": "nasdaq"},
+  "000834": {"name": "大成纳斯达克100ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "160213": {"name": "国泰纳斯达克100指数(QDII)", "type": "A", "purchase": "1.50%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.15%", "category": "nasdaq"},
+  "016452": {"name": "南方纳斯达克100指数发起(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019547": {"name": "招商纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "016055": {"name": "博时纳斯达克100ETF发起式联接(QDII)人民币A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.75%", "category": "nasdaq"},
+  "539001": {"name": "建信纳斯达克100指数(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "019524": {"name": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "161130": {"name": "易方达纳斯达克100LOF", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.72%", "category": "nasdaq"},
+  "018966": {"name": "汇添富纳斯达克100ETF发起式联接(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019172": {"name": "摩根纳斯达克100指数(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.72%", "category": "nasdaq"},
+  "019736": {"name": "宝盈纳斯达克100指数发起(QDII)人民币", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019441": {"name": "万家纳斯达克100指数发起式(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.75%", "category": "nasdaq"},
+  "015299": {"name": "华夏纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.20%", "sales": "0%", "total": "0.92%", "category": "nasdaq"},
+  "006479": {"name": "广发纳斯达克100ETF联接人民币(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.20%", "total": "1.20%", "category": "nasdaq"},
+  "014978": {"name": "华安纳斯达克100ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.20%", "total": "1.00%", "category": "nasdaq"},
+  "018044": {"name": "天弘纳斯达克100指数发起(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.20%", "total": "0.80%", "category": "nasdaq"},
+  "016453": {"name": "南方纳斯达克100指数发起C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.10%", "total": "0.75%", "category": "nasdaq"},
+  "008971": {"name": "大成纳斯达克100ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.30%", "total": "1.30%", "category": "nasdaq"},
+  "016533": {"name": "嘉实纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.25%", "total": "0.85%", "category": "nasdaq"},
+  "016057": {"name": "博时纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.30%", "total": "0.95%", "category": "nasdaq"},
+  "012752": {"name": "建信纳斯达克100指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.30%", "total": "1.30%", "category": "nasdaq"},
+  "019525": {"name": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.25%", "total": "0.90%", "category": "nasdaq"},
+  "018967": {"name": "汇添富纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.40%", "total": "1.05%", "category": "nasdaq"},
+  "019173": {"name": "摩根纳斯达克100指数(QDII)人民币C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.30%", "total": "0.90%", "category": "nasdaq"},
+  "019737": {"name": "宝盈纳斯达克100指数发起(QDII)人民币C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.25%", "total": "0.85%", "category": "nasdaq"},
+  "019442": {"name": "万家纳斯达克100指数发起式(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.20%", "total": "0.85%", "category": "nasdaq"},
+  "015300": {"name": "华夏纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.30%", "total": "1.10%", "category": "nasdaq"},
+  "050025": {"name": "博时标普500ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.20%", "sales": "0%", "total": "0.92%", "category": "sp500"},
+  "017641": {"name": "摩根标普500指数(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "sp500"},
+  "161125": {"name": "易方达标普500指数LOF", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "sp500"},
+  "017028": {"name": "国泰标普500ETF发起式联接(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.60%", "custody": "0.15%", "sales": "0%", "total": "0.85%", "category": "sp500"},
+  "006075": {"name": "博时标普500ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.35%", "total": "1.15%", "category": "sp500"},
+  "019305": {"name": "摩根标普500指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.30%", "total": "0.95%", "category": "sp500"},
+  "012860": {"name": "易方达标普500指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.35%", "total": "1.35%", "category": "sp500"},
+  "017030": {"name": "国泰标普500ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.15%", "sales": "0.30%", "total": "1.05%", "category": "sp500"},
+  "019548": {"name": "招商纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.40%", "total": "1.05%", "category": "nasdaq"},
+  "012870": {"name": "易方达纳斯达克100ETF联接(QDII-LOF)C(人民币)", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.30%", "total": "0.90%", "category": "nasdaq"},
+  "018064": {"name": "华夏标普500ETF发起式联接(QDII)A(人民币)", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.15%", "sales": "0%", "total": "0.76%", "category": "sp500"},
+  "018065": {"name": "华夏标普500ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.15%", "sales": "0.30%", "total": "1.05%", "category": "sp500"}
+};
 
 function $id(id){return document.getElementById(id)}
 function showToast(msg){
@@ -353,12 +415,113 @@ function buildSentimentUI(){
   $id('panelSentiment').innerHTML=html
 }
 
+function fetchFundRealtime(code){
+  return new Promise(function(resolve,reject){
+    var script=document.createElement('script');
+    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
+    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
+    window.jsonpgz=function(data){cleanup();resolve(data)};
+    script.src='https://fundgz.1234567.com.cn/js/'+code+'.js?rt='+Date.now();
+    script.onerror=function(){cleanup();reject(new Error('error'))};
+    document.head.appendChild(script)
+  })
+}
+
+function updateFundDataFromAPI(){
+  if(fundApiUpdating) return;
+  fundApiUpdating=true;
+  var codes=Object.keys(FUND_INFO);
+  var total=codes.length;
+  var done=0;
+  var ok=0;
+  var apiResults={};
+  var progressBar=$id('fundProgressBar');
+  var progressWrap=$id('fundProgress');
+  var btnUpdate=$id('btnFundUpdate');
+  if(progressWrap)progressWrap.classList.add('active');
+  if(btnUpdate)btnUpdate.disabled=true;
+  function updateProgress(){
+    var pct=Math.round(done/total*100);
+    if(progressBar)progressBar.style.width=pct+'%';
+    if(btnUpdate)btnUpdate.textContent=done+'/'+total
+  }
+  function next(){
+    if(done>=total){
+      fundApiUpdating=false;
+      fundApiTime=new Date();
+      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='在线更新'}
+      if(progressWrap)progressWrap.classList.remove('active');
+      if(progressBar)progressBar.style.width='0';
+      mergeApiData(apiResults,ok);
+      showToast('已更新 '+ok+'/'+total+' 只基金实时数据');
+      return
+    }
+    var code=codes[done];
+    fetchFundRealtime(code).then(function(data){
+      apiResults[data.fundcode]=data;
+      ok++;
+      done++;
+      updateProgress();
+      next()
+    }).catch(function(){
+      done++;
+      updateProgress();
+      next()
+    })
+  }
+  updateProgress();
+  next()
+}
+
+function mergeApiData(apiResults,okCount){
+  if(fundData.length>0){
+    for(var i=0;i<fundData.length;i++){
+      var f=fundData[i];
+      var api=apiResults[f['基金代码']];
+      if(api){
+        f['最新净值']=api.dwjz;
+        f['日涨跌幅']=api.gszzl+'%';
+        f['净值日期']=api.gztime||api.jzrq;
+        f._apiSource=true
+      }
+    }
+  }else{
+    var codes=Object.keys(FUND_INFO);
+    fundData=[];
+    for(var i=0;i<codes.length;i++){
+      var code=codes[i];
+      var info=FUND_INFO[code];
+      var api=apiResults[code];
+      fundData.push({
+        "基金代码":code,
+        "基金名称":info.name,
+        "类型":info.type,
+        "最新净值":api?api.dwjz:"N/A",
+        "日涨跌幅":api?api.gszzl+"%":"N/A",
+        "净值日期":api?(api.gztime||api.jzrq):"N/A",
+        "交易状态":"N/A",
+        "购买手续费":info.purchase,
+        "管理费率":info.management,
+        "托管费率":info.custody,
+        "销售服务费":info.sales,
+        "合计费率":info.total,
+        "近1年":"N/A",
+        "链接":"https://fund.eastmoney.com/"+code+".html",
+        "分类":info.category,
+        _apiSource:!!api
+      })
+    }
+  }
+  buildRestrictionUI()
+}
+
 function loadFundData(){
   fetchJSON(FUND_URL).then(function(data){
     fundData = data;
     buildRestrictionUI();
   }).catch(function(e){
-    $id('panelRestriction').innerHTML='<div class="error-box"><div class="msg">基金数据加载失败</div><button onclick="loadFundData()">重试</button></div>'
+    fundData=[];
+    buildRestrictionUI();
   })
 }
 
@@ -411,7 +574,10 @@ function formatBuyableAmount(total){
 }
 
 function buildRestrictionUI(){
-  if(!fundData||fundData.length===0){$id('panelRestriction').innerHTML='<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="loadFundData()">重试</button></div>';return}
+  if(!fundData||fundData.length===0){
+    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据，点击右侧从API获取</span><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
+    $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
+  }
   var nasdaq=[],sp500=[];
   for(var i=0;i<fundData.length;i++){
     var f=fundData[i];
@@ -420,6 +586,10 @@ function buildRestrictionUI(){
   }
   nasdaq.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
   sp500.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
+
+  var apiCount=0;
+  for(var i=0;i<fundData.length;i++){if(fundData[i]._apiSource)apiCount++}
+  var sourceInfo=fundApiTime?'API更新于 '+fundApiTime.getHours()+':'+String(fundApiTime.getMinutes()).padStart(2,'0')+(apiCount>0?' ('+apiCount+'只实时)':''):'本地缓存数据';
 
   function renderGroup(title,list){
     var h='';
@@ -432,9 +602,10 @@ function buildRestrictionUI(){
       var netRetCls=netRet>0?'up':'down';
       var retRaw=f['近1年']||'-';
       var limit=parseLimit(f['交易状态']);
+      var sourceTag=f._apiSource?'<span class="fund-source-tag fund-source-api">实时</span>':'<span class="fund-source-tag fund-source-local">缓存</span>';
       h+='<div class="fund-card">'
         +'<div class="fund-card-top">'
-          +'<div><div class="fund-name">'+f['基金名称']+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'
+          +'<div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'
           +getFundBadge(f['交易状态'])
         +'</div>'
         +'<div class="fund-card-meta">'
@@ -448,6 +619,8 @@ function buildRestrictionUI(){
     return h
   }
   var html=''
+    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+'</span><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div>'
+    +'<div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>'
     +'<div class="fund-group-title">纳斯达克100<span class="fund-group-count">'+nasdaq.length+'只基金</span></div>'
     +renderGroup('纳斯达克100',nasdaq)
     +'<div class="fund-group-title" style="margin-top:16px">标普500<span class="fund-group-count">'+sp500.length+'只基金</span></div>'
