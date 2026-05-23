@@ -392,9 +392,22 @@ function getNetReturn(f){
 }
 function isBuyable(f){
   var s=f['交易状态']||'';
-  var lim=parseLimit(s);
-  if(lim!=null&&lim>0) return true;
   return s.indexOf('暂停申购')<0&&s.indexOf('暂停赎回')<0
+}
+
+function calcBuyableAmount(list){
+  var total=0;
+  for(var i=0;i<list.length;i++){
+    var s=list[i]['交易状态']||'';
+    if(s.indexOf('暂停申购')>=0) continue;
+    var m=s.match(/单日累计购买上限([\d.]+)(万?)元/);
+    if(m){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;total+=v}
+  }
+  return total
+}
+function formatBuyableAmount(total){
+  if(total>=10000) return (total/10000).toFixed(2)+'万元';
+  return total.toFixed(0)+'元'
 }
 
 function buildRestrictionUI(){
@@ -408,26 +421,10 @@ function buildRestrictionUI(){
   nasdaq.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
   sp500.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
 
-  function groupBuyableInfo(list){
-    var count=0,totalLimit=0,unlimited=0;
-    for(var i=0;i<list.length;i++){
-      if(!isBuyable(list[i])) continue;
-      count++;
-      var lim=parseLimit(list[i]['交易状态']);
-      if(lim!=null&&lim>0){totalLimit+=lim}else{unlimited++}
-    }
-    return {count:count,totalLimit:totalLimit,unlimited:unlimited}
-  }
-
   function renderGroup(title,list){
-    var info=groupBuyableInfo(list),h='';
-    var buyableHtml='';
-    if(info.count>0){
-      buyableHtml='可申购 '+info.count+' 只';
-      if(info.totalLimit>0) buyableHtml+=' · 限额总额 <span class="fund-summary-val">¥'+info.totalLimit.toLocaleString()+'</span>/日';
-      if(info.unlimited>0) buyableHtml+=' · <span class="fund-summary-val">'+info.unlimited+'</span>只无限额';
-    }
-    h+='<div class="fund-summary"><span>'+title+'</span><span>'+buyableHtml+'</span></div>';
+    var h='';
+    var buyable=calcBuyableAmount(list);
+    h+='<div class="fund-summary"><span>'+title+'</span><span>可买入：<span class="fund-summary-val">'+formatBuyableAmount(buyable)+'</span></span></div>';
     for(var i=0;i<list.length;i++){
       var f=list[i];
       var netRet=getNetReturn(f);
