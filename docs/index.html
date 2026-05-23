@@ -748,12 +748,19 @@ function buildRestrictionUI(){
   function renderGroup(title,list){
     var h='';
     var buyable=calcBuyableAmount(list);
-    h+='<div class="fund-summary"><span>'+title+'</span><span>可买入：<span class="fund-summary-val">'+formatBuyableAmount(buyable)+'</span></span></div>';
+    h+='<div class="fund-summary"><span>'+title+' ('+list.length+'只)</span><span>可买入：<span class="fund-summary-val">'+formatBuyableAmount(buyable.total,buyable.count)+'</span></span></div>';
     for(var i=0;i<list.length;i++){
       var f=list[i],netRet=getNetReturn(f),netRetStr=netRet.toFixed(2)+'%',netRetCls=netRet>0?'up':'down';
-      var retRaw=f['近1年']||'-',limit=parseLimit(f['交易状态']);
+      var retRaw=f['近1年']||'-';
       var sourceTag=f._apiSource?'<span class="fund-source-tag fund-source-api">实时</span>':'<span class="fund-source-tag fund-source-local">缓存</span>';
-      h+='<div class="fund-card"><div class="fund-card-top"><div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'+getFundBadge(f['交易状态'])+'</div><div class="fund-card-meta"><div class="fund-meta-item"><span class="fund-meta-label">近一年收益</span><span class="'+netRetCls+'" style="font-weight:700;font-size:13px">'+netRetStr+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div></div>'+(limit!=null&&limit>0?'<div class="purchase-limit">每日上限: <strong>'+limit.toLocaleString()+'元</strong></div>':'')+'</div>'
+      var s=f['交易状态']||'';
+      var isSuspended=s.indexOf('暂停申购')>=0||s.indexOf('限制申购')>=0;
+      var limitHtml='';
+      if(!isSuspended){
+        var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
+        if(m){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;limitHtml='<div class="purchase-limit">每日上限: <strong>'+v.toLocaleString()+'元</strong></div>'}
+      }
+      h+='<div class="fund-card"><div class="fund-card-top"><div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'+getStatusBadge(s)+'</div><div class="fund-card-meta"><div class="fund-meta-item"><span class="fund-meta-label">近一年收益</span><span class="'+netRetCls+'" style="font-weight:700;font-size:13px">'+netRetStr+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div></div>'+limitHtml+'</div>'
     }
     return h
   }
@@ -777,28 +784,37 @@ function parsePct(str){
 }
 function getNetReturn(f){return parsePct(f['近1年']) - parsePct(f['合计费率'])}
 function isBuyable(f){var s=f['交易状态']||'';return s.indexOf('暂停申购')<0&&s.indexOf('暂停赎回')<0}
-function getFundBadge(statusText){
-  if(!statusText||statusText==='--')return'<span class="fund-badge unknown">未知</span>';
-  if(hasPurchaseLimit(statusText))return'<span class="fund-badge limit">限量</span>';
-  if(statusText.indexOf('暂停申购')>=0||statusText.indexOf('限制申购')>=0)return'<span class="fund-badge closed">限购</span>';
-  if(statusText.indexOf('开放申购')>=0||statusText.indexOf('正常')>=0||statusText.indexOf('申购开放')>=0)return'<span class="fund-badge open">开放</span>';
-  return'<span class="fund-badge unknown">'+statusText+'</span>'
+function getStatusBadge(statusText){
+  if(!statusText||statusText==='--'||statusText==='N/A')return'<div style="text-align:right"><span class="fund-badge fund-badge-info">未知</span></div>';
+  var mainText=statusText;
+  var limitText='';
+  var m=statusText.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
+  if(m){mainText=statusText.replace(m[0],'').trim();limitText=m[0]}
+  var cls='fund-badge-info';
+  if(mainText.indexOf('暂停申购')>=0){cls='fund-badge-danger'}
+  else if(m){var lim=parseFloat(m[1]);if(m[2]==='万')lim*=10000;cls=lim<100?'fund-badge-danger':lim<1000?'fund-badge-warn':'fund-badge-ok'}
+  else if(mainText.indexOf('开放申购')>=0||mainText.indexOf('正常')>=0){cls='fund-badge-ok'}
+  var h='<div style="text-align:right"><span class="fund-badge '+cls+'">'+mainText+'</span>';
+  if(limitText)h+='<div style="font-size:10px;color:var(--text-muted);margin-top:2px">'+limitText+'</div>';
+  return h+'</div>'
 }
-function formatBuyableAmount(total){
+function formatBuyableAmount(total,count){
   if(total==null||total===0)return'<span style="color:var(--text-muted)">0</span>';
-  if(total>=100000000)return'<span style="color:var(--green)">'+(total/100000000).toFixed(1)+'亿</span>';
-  if(total>=10000)return'<span style="color:var(--green)">'+(total/10000).toFixed(0)+'万</span>';
-  return'<span style="color:var(--green)">'+total.toLocaleString()+'</span>'
+  var amt='';
+  if(total>=100000000)amt=(total/100000000).toFixed(1)+'亿';
+  else if(total>=10000)amt=(total/10000).toFixed(0)+'万';
+  else amt=total.toLocaleString();
+  return'<span style="color:var(--green)">'+count+'只 / '+amt+'元</span>'
 }
 function calcBuyableAmount(list){
-  var total=0;
+  var total=0,count=0;
   for(var i=0;i<list.length;i++){
     var f=list[i],s=f['交易状态']||'';
     if(s.indexOf('暂停申购')>=0||s.indexOf('限制申购')>=0)continue;
-    var lim=parseLimit(s);
-    if(lim!=null&&lim>0)total+=lim;else total+=1500
+    var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
+    if(m){var val=parseFloat(m[1])||0;if(m[2]==='万')val*=10000;total+=val;count++}
   }
-  return total
+  return{total:total,count:count}
 }
 
 // ── 基金基金实时数据更新 ──
