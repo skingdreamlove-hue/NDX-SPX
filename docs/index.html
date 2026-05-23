@@ -392,6 +392,8 @@ function getNetReturn(f){
 }
 function isBuyable(f){
   var s=f['交易状态']||'';
+  var lim=parseLimit(s);
+  if(lim!=null&&lim>0) return true;
   return s.indexOf('暂停申购')<0&&s.indexOf('暂停赎回')<0
 }
 
