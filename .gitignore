@@ -8,3 +8,6 @@ server_err.txt
 full_output.txt
 output.txt
 .trae/
+# auto-generated
+market_data.json
+docs/data/latest.json
