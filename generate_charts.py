@@ -210,7 +210,46 @@ def generate_chart(data, vix_data, index_name, vix_name, filename):
         spikesnap='cursor'
     )
 
-    fig.write_html(filename, include_plotlyjs='cdn', full_html=True)
+    fig.write_html(filename, include_plotlyjs='cdn', full_html=False, include_mathjax=False)
+
+    chart_html = f"""<html>
+<head><meta charset="utf-8" /><style>
+:root{{--chart-bg:#fff;--chart-text:#111827;--chart-border:#E5E7EB;--chart-btn-bg:#f3f4f6;--chart-btn-text:#374151;--chart-btn-hover:#e5e7eb;--chart-error-text:#6B7280}}
+@media(prefers-color-scheme:dark){{:root{{--chart-bg:#0f1117;--chart-text:#e8ecf4;--chart-border:#2a3050;--chart-btn-bg:#1e2335;--chart-btn-text:#e8ecf4;--chart-btn-hover:#2a3050;--chart-error-text:#8892b0}}}}
+@media(prefers-reduced-motion:reduce){{*,*::before,*::after{{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}}}
+body{{background:var(--chart-bg);color:var(--chart-text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:16px}}
+.chart-container{{position:relative}}
+.chart-error{{display:none;text-align:center;padding:60px 20px;color:var(--chart-error-text)}}
+.chart-error.visible{{display:block}}
+.chart-error svg{{margin-bottom:12px}}
+.export-btn{{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:8px 16px;background:var(--chart-btn-bg);color:var(--chart-btn-text);border:1px solid var(--chart-border);border-radius:6px;font-size:13px;cursor:pointer;transition:background .15s}}
+.export-btn:hover{{background:var(--chart-btn-hover)}}
+</style></head>
+<body>
+    <div>
+        <div class="chart-container">
+            {open(filename, 'r', encoding='utf-8').read()}
+            <div class="chart-error" id="chart-error">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p>图表数据加载失败，请刷新页面重试</p>
+            </div>
+            <button class="export-btn" onclick="exportChart()" aria-label="下载图表">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载图表
+            </button>
+        </div>
+        <script>
+        function exportChart(){{
+            var gd=document.querySelector('.plotly-graph-div');
+            if(gd&&window.Plotly){{Plotly.downloadImage(gd,{{format:'png',width:1200,height:600,filename:'{index_name}_chart'}});}}
+        }}
+        </script>
+    </div>
+</body>
+</html>"""
+
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(chart_html)
     print(f"{filename} 已生成")
 
 # VIX期限结构历史缓存
@@ -745,6 +784,15 @@ def save_daily_log_to_csv(log_data):
         record['verify_5d_result'] = verify_5d.get('result', '')
         record['verify_5d_divergence'] = verify_5d.get('divergence', '')
         
+        # verify_10d
+        verify_10d = entry.get('verify_10d', {})
+        record['verify_10d_status'] = verify_10d.get('status', '')
+        record['verify_10d_ndx_return'] = verify_10d.get('ndx_return', '')
+        record['verify_10d_spx_return'] = verify_10d.get('spx_return', '')
+        record['verify_10d_weighted_return'] = verify_10d.get('weighted_return', '')
+        record['verify_10d_result'] = verify_10d.get('result', '')
+        record['verify_10d_divergence'] = verify_10d.get('divergence', '')
+        
         # verify_20d
         verify_20d = entry.get('verify_20d', {})
         record['verify_20d_status'] = verify_20d.get('status', '')
@@ -768,6 +816,208 @@ def save_daily_log_to_js(log_data):
         f.write(json.dumps(log_data, ensure_ascii=False, indent=2))
         f.write(';')
     print(f"已同步更新 {js_file.name}")
+
+def get_trading_dates_between(start_date_str, end_date_str):
+    """获取两个日期之间的所有美股交易日列表"""
+    try:
+        start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_date_str, '%Y-%m-%d')
+        spx = yf.Ticker('^GSPC')
+        hist = spx.history(start=(start_dt - timedelta(days=3)).strftime('%Y-%m-%d'),
+                           end=(end_dt + timedelta(days=3)).strftime('%Y-%m-%d'))
+        if hist.empty:
+            return []
+        hist.index = hist.index.tz_localize(None)
+        mask = (hist.index >= pd.Timestamp(start_dt)) & (hist.index <= pd.Timestamp(end_dt))
+        trading_dates = hist.index[mask].strftime('%Y-%m-%d').tolist()
+        return trading_dates
+    except Exception as e:
+        print(f"获取交易日列表失败: {e}")
+        return []
+
+def backfill_missing_logs():
+    """检查并补录缺失交易日的数据"""
+    log_data = load_daily_log()
+    if not log_data:
+        return
+
+    existing_dates = set(entry.get('date') for entry in log_data if entry.get('date'))
+    sorted_dates = sorted(existing_dates)
+    if not sorted_dates:
+        return
+
+    last_recorded = sorted_dates[-1]
+    today_str = get_last_trading_date()
+
+    if last_recorded >= today_str:
+        return
+
+    missing_dates = get_trading_dates_between(last_recorded, today_str)
+    missing_dates = [d for d in missing_dates if d not in existing_dates and d < today_str]
+
+    if not missing_dates:
+        return
+
+    print(f"\n--- 自动补录缺失交易日 ({len(missing_dates)}天) ---")
+    print(f"缺失日期: {missing_dates}")
+
+    try:
+        ndx_ticker = yf.Ticker('^NDX')
+        ndx_hist = ndx_ticker.history(start=(datetime.strptime(missing_dates[0], '%Y-%m-%d') - timedelta(days=5)).strftime('%Y-%m-%d'),
+                                       end=(datetime.strptime(missing_dates[-1], '%Y-%m-%d') + timedelta(days=3)).strftime('%Y-%m-%d'))
+        ndx_hist.index = ndx_hist.index.tz_localize(None)
+
+        spx_ticker = yf.Ticker('^GSPC')
+        spx_hist = spx_ticker.history(start=(datetime.strptime(missing_dates[0], '%Y-%m-%d') - timedelta(days=5)).strftime('%Y-%m-%d'),
+                                       end=(datetime.strptime(missing_dates[-1], '%Y-%m-%d') + timedelta(days=3)).strftime('%Y-%m-%d'))
+        spx_hist.index = spx_hist.index.tz_localize(None)
+
+        vix_ticker = yf.Ticker('^VIX')
+        vix_hist = vix_ticker.history(start=(datetime.strptime(missing_dates[0], '%Y-%m-%d') - timedelta(days=5)).strftime('%Y-%m-%d'),
+                                       end=(datetime.strptime(missing_dates[-1], '%Y-%m-%d') + timedelta(days=3)).strftime('%Y-%m-%d'))
+        vix_hist.index = vix_hist.index.tz_localize(None)
+
+        ndx_long = ndx_ticker.history(period='1y')
+        ndx_long.index = ndx_long.index.tz_localize(None)
+        spx_long = spx_ticker.history(period='1y')
+        spx_long.index = spx_long.index.tz_localize(None)
+    except Exception as e:
+        print(f"获取历史数据失败，跳过补录: {e}")
+        return
+
+    prev_entry = None
+    for entry in log_data:
+        if entry.get('date') == last_recorded:
+            prev_entry = entry
+            break
+
+    backfilled = 0
+    for date_str in missing_dates:
+        date_ts = pd.Timestamp(date_str)
+
+        ndx_close = None
+        spx_close = None
+        vix_close = None
+        ndx_high = None
+        spx_high = None
+
+        if date_ts in ndx_hist.index:
+            ndx_close = float(ndx_hist.loc[date_ts, 'Close'])
+            ndx_high = float(ndx_hist.loc[date_ts, 'High'])
+        if date_ts in spx_hist.index:
+            spx_close = float(spx_hist.loc[date_ts, 'Close'])
+            spx_high = float(spx_hist.loc[date_ts, 'High'])
+        if date_ts in vix_hist.index:
+            vix_close = float(vix_hist.loc[date_ts, 'Close'])
+
+        if ndx_close is None or spx_close is None or vix_close is None:
+            print(f"  跳过 {date_str}：缺少行情数据")
+            continue
+
+        ndx_ma200 = float(ndx_long['Close'].loc[:date_ts].rolling(200).mean().iloc[-1]) if len(ndx_long['Close'].loc[:date_ts]) >= 200 else None
+        spx_ma200 = float(spx_long['Close'].loc[:date_ts].rolling(200).mean().iloc[-1]) if len(spx_long['Close'].loc[:date_ts]) >= 200 else None
+        ndx_ma20 = float(ndx_long['Close'].loc[:date_ts].rolling(20).mean().iloc[-1]) if len(ndx_long['Close'].loc[:date_ts]) >= 20 else None
+
+        ndx_drawdown = round((ndx_close - ndx_high) / ndx_high * 100, 2) if ndx_high else 0
+        spx_drawdown = round((spx_close - spx_high) / spx_high * 100, 2) if spx_high else 0
+        ndx_dev_ma200 = round((ndx_close - ndx_ma200) / ndx_ma200 * 100, 2) if ndx_ma200 and ndx_ma200 > 0 else 0
+        spx_dev_ma200 = round((spx_close - spx_ma200) / spx_ma200 * 100, 2) if spx_ma200 and spx_ma200 > 0 else 0
+
+        ref_md = prev_entry.get('market_data', {}) if prev_entry else {}
+        ref_vix_term = ref_md.get('vix_term')
+        ref_credit_spread = ref_md.get('credit_spread')
+        ref_rate_shock = ref_md.get('rate_shock', False)
+        ref_ndx_breadth = ref_md.get('ndx_above_ma200')
+
+        sentiment, core_triggered = calc_emotion_core(
+            ndx_drawdown=ndx_drawdown,
+            spx_drawdown=spx_drawdown,
+            ndx_dev_ma200=ndx_dev_ma200,
+            spx_dev_ma200=spx_dev_ma200,
+            vix=vix_close,
+            vix_term=ref_vix_term,
+            credit_spread=ref_credit_spread,
+            rate_shock=ref_rate_shock,
+            ndx_breadth_200ma=ref_ndx_breadth,
+        )
+
+        final_emotion, momentum_blocked = apply_momentum_filter(sentiment, ndx_close, ndx_ma20)
+        if momentum_blocked:
+            core_triggered = [("中性", "momentum_blocked")]
+        sentiment = final_emotion
+
+        signal_strength, trigger_dims = calc_signal_strength(sentiment, core_triggered, False)
+        ndx_above_ma200 = ndx_dev_ma200 > 0
+        target_position = get_target_position(sentiment, ndx_above_ma200)
+        position_advice = get_position_advice(sentiment, target_position, target_position, ndx_above_ma200)
+
+        entry = {
+            "date": date_str,
+            "market_data": {
+                "ndx": ndx_close,
+                "spx": spx_close,
+                "ndx_drawdown": ndx_drawdown,
+                "spx_drawdown": spx_drawdown,
+                "ndx_above_ma200": ref_md.get('ndx_above_ma200'),
+                "spx_above_ma200": ref_md.get('spx_above_ma200'),
+                "ndx_deviation_ma200": ndx_dev_ma200,
+                "spx_deviation_ma200": spx_dev_ma200,
+                "vix": vix_close,
+                "vix_term": ref_md.get('vix_term'),
+                "vix_term_days": ref_md.get('vix_term_days', 0),
+                "credit_spread": ref_credit_spread,
+                "rate_shock": ref_rate_shock,
+                "aaii_valid": ref_md.get('aaii_valid', False),
+                "qqq_oi_ratio": ref_md.get('qqq_oi_ratio'),
+                "qqq_oi_deviation": ref_md.get('qqq_oi_deviation'),
+                "spy_oi_ratio": ref_md.get('spy_oi_ratio'),
+                "spy_oi_deviation": ref_md.get('spy_oi_deviation'),
+                "on_rrp_deviation": ref_md.get('on_rrp_deviation'),
+                "ndx_spx_deviation": ref_md.get('ndx_spx_deviation'),
+                "iwm_spy_deviation": ref_md.get('iwm_spy_deviation')
+            },
+            "signal": {
+                "emotion": sentiment,
+                "strength": signal_strength,
+                "triggered_conditions": [ind for _, ind in core_triggered],
+                "target_position": position_advice.split(' / ')[0].replace('目标仓位 ', '') if ' / ' in position_advice else str(target_position) + '%',
+                "action": position_advice.split(' / ')[2] if len(position_advice.split(' / ')) > 2 else position_advice
+            },
+            "verify_5d": {
+                "status": "pending",
+                "ndx_return": None,
+                "spx_return": None,
+                "weighted_return": None,
+                "result": None,
+                "divergence": None
+            },
+            "verify_10d": {
+                "status": "pending",
+                "ndx_return": None,
+                "spx_return": None,
+                "weighted_return": None,
+                "result": None,
+                "divergence": None
+            },
+            "verify_20d": {
+                "status": "pending",
+                "ndx_return": None,
+                "spx_return": None,
+                "weighted_return": None,
+                "result": None,
+                "divergence": None
+            }
+        }
+
+        log_data.append(entry)
+        prev_entry = entry
+        backfilled += 1
+        print(f"  补录 {date_str}: NDX={ndx_close} SPX={spx_close} VIX={vix_close} 情绪={sentiment}")
+
+    if backfilled > 0:
+        log_data.sort(key=lambda x: x.get('date', ''))
+        save_daily_log(log_data)
+        print(f"已补录 {backfilled} 天缺失数据")
 
 def append_daily_log():
     print("\n--- 保存每日快照 ---")
@@ -821,6 +1071,14 @@ def append_daily_log():
             "result": None,
             "divergence": None
         },
+        "verify_10d": {
+            "status": "pending",
+            "ndx_return": None,
+            "spx_return": None,
+            "weighted_return": None,
+            "result": None,
+            "divergence": None
+        },
         "verify_20d": {
             "status": "pending",
             "ndx_return": None,
@@ -835,13 +1093,13 @@ def append_daily_log():
     save_daily_log(log_data)
     print(f"已保存 {today_str} 快照到 daily_log.json")
 
-def auto_verify_logs():
+def auto_verify_logs(force_reverify=False):
     print("\n--- 自动验证历史信号 ---")
     log_data = load_daily_log()
     if not log_data:
         print("无历史记录可验证")
         return
-    
+
     # 获取 NDX 和 SPX 历史数据
     ndx_data = None
     spx_data = None
@@ -850,7 +1108,7 @@ def auto_verify_logs():
         ndx_hist = ndx_ticker.history(period='5y', interval='1d')
         ndx_data = ndx_hist[['Close']].copy()
         ndx_data.index = ndx_data.index.tz_localize(None)
-        
+
         spx_ticker = yf.Ticker('^GSPC')
         spx_hist = spx_ticker.history(period='5y', interval='1d')
         spx_data = spx_hist[['Close']].copy()
@@ -858,41 +1116,36 @@ def auto_verify_logs():
     except Exception as e:
         print(f"获取历史数据失败: {e}")
         return
-    
+
     # 统一索引，只保留两者都有的交易日
     if ndx_data is not None and spx_data is not None:
         common_dates = ndx_data.index.intersection(spx_data.index)
         ndx_data = ndx_data.loc[common_dates]
         spx_data = spx_data.loc[common_dates]
-    
+
     modified = False
-    
+
     for entry in log_data:
         signal_date_str = entry.get('date')
         if not signal_date_str:
             continue
-        
+
         try:
             signal_date = datetime.strptime(signal_date_str, '%Y-%m-%d').date()
         except:
             continue
-        
-        # 验证 5d
-        if entry.get('verify_5d', {}).get('status') == 'pending':
-            result = verify_single_entry(entry, ndx_data, spx_data, signal_date, days=5)
-            if result:
-                entry['verify_5d'] = result
-                modified = True
-                print(f"[5d] 验证完成: {signal_date_str}")
-        
-        # 验证 20d
-        if entry.get('verify_20d', {}).get('status') == 'pending':
-            result = verify_single_entry(entry, ndx_data, spx_data, signal_date, days=20)
-            if result:
-                entry['verify_20d'] = result
-                modified = True
-                print(f"[20d] 验证完成: {signal_date_str}")
-    
+
+        for days in [5, 10, 20]:
+            key = f'verify_{days}d'
+            current = entry.get(key, {})
+            should_verify = (current.get('status') == 'pending') or force_reverify
+            if should_verify:
+                result = verify_single_entry(entry, ndx_data, spx_data, signal_date, days=days)
+                if result:
+                    entry[key] = result
+                    modified = True
+                    print(f"[{days}d] {'重新' if force_reverify and current.get('status') == 'verified' else ''}验证完成: {signal_date_str}")
+
     if modified:
         save_daily_log(log_data)
         print("验证结果已保存")
@@ -928,26 +1181,62 @@ def verify_single_entry(entry, ndx_data, spx_data, signal_date, days):
     # 计算涨跌幅
     ndx_return = ((ndx_target - ndx_signal) / ndx_signal) * 100
     spx_return = ((spx_target - spx_signal) / spx_signal) * 100
-    weighted_return = ndx_return * 0.75 + spx_return * 0.25
-    
-    # 判定结果
+    weighted_return = ndx_return * 0.7 + spx_return * 0.3
+
+    # 判定结果（按情绪和周期差异化阈值）
     emotion = entry.get('signal', {}).get('emotion', '')
+
+    # 定义阈值：{情绪: {days: (正确阈值, 误判阈值, 中性低, 中性高)}}
+    # 恐慌/极度恐慌：正确=涨超阈值，误判=跌超阈值
+    # 贪婪/极度贪婪：正确=跌超阈值，误判=涨超阈值
+    # 中性：正确=在中性区间内，误判=超出区间
+    THRESHOLDS = {
+        '恐慌': {
+            5:  (3,  -3,  -5,  5),
+            10: (4,  -4,  -6,  6),
+            20: (6,  -5,  -8,  8),
+        },
+        '极度恐慌': {
+            5:  (5,  -2,  -5,  5),
+            10: (7,  -3,  -6,  6),
+            20: (10, -4,  -8,  8),
+        },
+        '贪婪': {
+            5:  (-3, 3,  -5,  5),
+            10: (-4, 4,  -6,  6),
+            20: (-6, 5,  -8,  8),
+        },
+        '极度贪婪': {
+            5:  (-5, 2,  -5,  5),
+            10: (-7, 3,  -6,  6),
+            20: (-10, 4,  -8,  8),
+        },
+        '中性': {
+            5:  (None, None, -5,  5),
+            10: (None, None, -6,  6),
+            20: (None, None, -8,  8),
+        },
+    }
+
+    t = THRESHOLDS.get(emotion, THRESHOLDS['中性']).get(days, THRESHOLDS['中性'][5])
+    correct_thr, wrong_thr, neutral_low, neutral_high = t
+
     if emotion in ['恐慌', '极度恐慌']:
-        if weighted_return > 3:
+        if weighted_return > correct_thr:
             verify_result = 'correct'
-        elif weighted_return < -3:
+        elif weighted_return < wrong_thr:
             verify_result = 'wrong'
         else:
             verify_result = 'neutral'
     elif emotion in ['贪婪', '极度贪婪']:
-        if weighted_return < -3:
+        if weighted_return < correct_thr:
             verify_result = 'correct'
-        elif weighted_return > 3:
+        elif weighted_return > wrong_thr:
             verify_result = 'wrong'
         else:
             verify_result = 'neutral'
     else:  # 中性
-        if -5 <= weighted_return <= 5:
+        if neutral_low <= weighted_return <= neutral_high:
             verify_result = 'correct'
         else:
             verify_result = 'wrong'
@@ -972,5 +1261,6 @@ def verify_single_entry(entry, ndx_data, spx_data, signal_date, days):
     }
 
 # 执行每日记录和验证
+backfill_missing_logs()
 append_daily_log()
-auto_verify_logs()
+auto_verify_logs(force_reverify=True)

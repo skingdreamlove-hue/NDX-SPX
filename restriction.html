@@ -6,54 +6,147 @@
     <title>美股场外基金限购查询</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: #F9FAFB; color: #111827; line-height: 1.6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: var(--page-bg); color: var(--page-text); line-height: 1.6; }
+        :root {
+            --page-bg: #F9FAFB;
+            --page-text: #111827;
+            --card-bg: #fff;
+            --card-border: #E5E7EB;
+            --card-header-border: #F3F4F6;
+            --th-bg: #FFFFFF;
+            --th-text: #4B5563;
+            --th-hover-text: #111827;
+            --td-border: #F3F4F6;
+            --tr-hover: #F8FAFC;
+            --muted-text: #6B7280;
+            --faint-text: #6B7280;
+            --link-text: #111827;
+            --link-hover: #6366F1;
+            --sort-active: #6366F1;
+            --sort-inactive: #9CA3AF;
+            --type-a-bg: #EEF2FF;
+            --type-a-text: #4338CA;
+            --type-c-bg: #FEF3C7;
+            --type-c-text: #92400E;
+            --fee-total-text: #374151;
+            --btn-primary-bg: #111827;
+            --btn-primary-hover: #374151;
+            --btn-secondary-bg: #fff;
+            --btn-secondary-text: #374151;
+            --btn-secondary-border: #D1D5DB;
+            --badge-danger: #EF4444;
+            --badge-warning: #F59E0B;
+            --badge-success: #10B981;
+            --badge-info: #3B82F6;
+            --badge-default: #6B7280;
+            --spinner-border: #E5E7EB;
+            --spinner-top: #6366F1;
+            --update-info-text: #6B7280;
+            --fund-count-bg: #F3F4F6;
+            --fund-count-text: #6B7280;
+            --buyable-bg: #ECFDF5;
+            --buyable-text: #059669;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --page-bg: #0f1117;
+                --page-text: #e8ecf4;
+                --card-bg: #181c27;
+                --card-border: #2a3050;
+                --card-header-border: #2a3050;
+                --th-bg: #181c27;
+                --th-text: #8892b0;
+                --th-hover-text: #e8ecf4;
+                --td-border: #2a3050;
+                --tr-hover: #1e2335;
+                --muted-text: #8892b0;
+                --faint-text: #8892b0;
+                --link-text: #e8ecf4;
+                --link-hover: #818CF8;
+                --sort-active: #818CF8;
+                --sort-inactive: #5a6580;
+                --type-a-bg: rgba(99,102,241,.15);
+                --type-a-text: #A5B4FC;
+                --type-c-bg: rgba(245,158,11,.15);
+                --type-c-text: #FCD34D;
+                --fee-total-text: #e8ecf4;
+                --btn-primary-bg: #e8ecf4;
+                --btn-primary-hover: #c8cee0;
+                --btn-secondary-bg: #1e2335;
+                --btn-secondary-text: #e8ecf4;
+                --btn-secondary-border: #3a4570;
+                --badge-danger: #EF4444;
+                --badge-warning: #F59E0B;
+                --badge-success: #10B981;
+                --badge-info: #3B82F6;
+                --badge-default: #6B7280;
+                --spinner-border: #2a3050;
+                --spinner-top: #818CF8;
+                --update-info-text: #8892b0;
+                --fund-count-bg: #1e2335;
+                --fund-count-text: #8892b0;
+                --buyable-bg: rgba(16,185,129,.12);
+                --buyable-text: #34D399;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        @keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        body { animation: page-fade-in 0.3s ease; }
         .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; gap: 24px; }
         .header-left { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
-        .header-title { font-size: 28px; font-weight: 800; color: #111827; margin: 0; }
+        .header-title { font-size: 28px; font-weight: 800; color: var(--page-text); margin: 0; }
         .header-badge { background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); color: white; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
         .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
         .header-actions { display: flex; gap: 10px; }
         .switch-btn { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(37,99,235,0.25); text-decoration: none; display: inline-block; }
         .switch-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.35); }
-        .update-info { font-size: 12px; color: #9CA3AF; }
+        .update-info { font-size: 12px; color: var(--update-info-text); }
 
         .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s ease; white-space: nowrap; }
         .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-        .btn-primary { background: #111827; color: #fff; }
-        .btn-primary:hover { background: #374151; box-shadow: 0 2px 8px rgba(17,24,39,.25); }
-        .btn-primary:disabled { background: #D1D5DB; cursor: not-allowed; box-shadow: none; }
-        .btn-secondary { background: #fff; color: #374151; border: 1px solid #D1D5DB; }
-        .btn-secondary:hover { background: #F9FAFB; border-color: #9CA3AF; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+        .btn-primary { background: var(--btn-primary-bg); color: var(--page-bg); }
+        .btn-primary:hover { background: var(--btn-primary-hover); box-shadow: 0 2px 8px rgba(17,24,39,.25); }
+        .btn-primary:disabled { background: var(--sort-inactive); cursor: not-allowed; box-shadow: none; }
+        .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); }
+        .btn-secondary:hover { background: var(--tr-hover); border-color: var(--muted-text); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
         .btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
 
-        .card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06); margin-bottom: 28px; }
-        .card-header { padding: 18px 24px; border-bottom: 1px solid #F3F4F6; display: flex; align-items: center; gap: 10px; }
-        .card-header h2 { font-size: 17px; font-weight: 600; color: #111827; }
-        .card-header .fund-count { font-size: 12px; color: #9CA3AF; background: #F3F4F6; padding: 2px 8px; border-radius: 9999px; font-weight: 500; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06); margin-bottom: 28px; }
+        .card-header { padding: 18px 24px; border-bottom: 1px solid var(--card-header-border); display: flex; align-items: center; gap: 10px; }
+        .card-header h2 { font-size: 17px; font-weight: 600; color: var(--page-text); }
+        .card-header .fund-count { font-size: 12px; color: var(--fund-count-text); background: var(--fund-count-bg); padding: 2px 8px; border-radius: 9999px; font-weight: 500; }
+        .buyable-amount { font-size: 13px; color: var(--buyable-text); background: var(--buyable-bg); padding: 4px 12px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .buyable-amount svg { width: 14px; height: 14px; }
         .card-body { padding: 0; }
 
         .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; table-layout: auto; border-collapse: collapse; font-size: 14px; }
         thead { position: sticky; top: 0; z-index: 10; }
-        thead::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #E5E7EB; }
-        th { padding: 11px 10px; text-align: center; font-weight: 600; font-size: 12px; letter-spacing: .04em; color: #6B7280; background: #FFFFFF; cursor: pointer; user-select: none; white-space: nowrap; transition: color .15s; }
-        th:hover { color: #111827; }
-        th .sort-icon { display: inline-block; margin-left: 3px; color: #D1D5DB; font-size: 11px; vertical-align: middle; }
-        th.sort-asc .sort-icon, th.sort-desc .sort-icon { color: #6366F1; }
-        td { padding: 11px 10px; text-align: center; border-bottom: 1px solid #F3F4F6; white-space: nowrap; vertical-align: middle; }
+        thead::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--card-border); }
+        th { padding: 11px 10px; text-align: center; font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--th-text); background: var(--th-bg); cursor: pointer; user-select: none; white-space: nowrap; transition: color .15s; }
+        th:hover { color: var(--th-hover-text); }
+        th .sort-icon { display: inline-block; margin-left: 3px; color: var(--sort-inactive); font-size: 11px; vertical-align: middle; }
+        th.sort-asc .sort-icon, th.sort-desc .sort-icon { color: var(--sort-active); }
+        td { padding: 11px 10px; text-align: center; border-bottom: 1px solid var(--td-border); white-space: nowrap; vertical-align: middle; }
         tbody tr { transition: background .12s; }
-        tbody tr:hover { background: #F8FAFC; }
+        tbody tr:hover { background: var(--tr-hover); }
         tbody tr:last-child td { border-bottom: none; }
 
         .col-index { width: 56px; min-width: 56px; }
-        .col-index span { color: #9CA3AF; font-size: 13px; }
+        .col-index span { color: var(--faint-text); font-size: 13px; }
         .col-code { width: 72px; min-width: 72px; }
-        .col-code span { font-family: "SF Mono", "Fira Code", "Consolas", monospace; color: #9CA3AF; font-size: 13px; font-weight: 500; }
+        .col-code span { font-family: "SF Mono", "Fira Code", "Consolas", monospace; color: var(--faint-text); font-size: 13px; font-weight: 500; }
         .col-name { width: 100%; min-width: 280px; }
         .col-name td { text-align: left !important; }
-        .col-name a { display: block; color: #111827; text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .col-name a:hover { color: #6366F1; }
+        .col-name a { display: block; color: var(--link-text); text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .col-name a:hover { color: var(--link-hover); }
         .col-type { width: 60px; min-width: 60px; }
         .col-return1y { width: 100px; min-width: 100px; }
         .col-netreturn { width: 110px; min-width: 110px; }
@@ -62,26 +155,26 @@
         .col-return { font-variant-numeric: tabular-nums; font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-weight: 600; font-size: 13px; }
         .col-return .pos { color: #DC2626; }
         .col-return .neg { color: #059669; }
-        .col-fee-weak { color: #9CA3AF; font-size: 12px; font-variant-numeric: tabular-nums; }
-        .col-fee-total { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; color: #374151; }
+        .col-fee-weak { color: var(--faint-text); font-size: 12px; font-variant-numeric: tabular-nums; }
+        .col-fee-total { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--fee-total-text); }
 
         .status-cell { text-align: center !important; padding: 10px 8px; }
         .badge-group { display: inline-flex; flex-direction: column; align-items: center; }
         .badge { display: inline-block; padding: 4px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #FFFFFF; letter-spacing: .02em; }
-        .badge-danger { background: #EF4444; }
-        .badge-warning { background: #F59E0B; }
-        .badge-success { background: #10B981; }
-        .badge-info { background: #3B82F6; }
-        .badge-default { background: #6B7280; }
-        .badge-limit { display: block; font-size: 11px; color: #9CA3AF; margin-top: 4px; white-space: nowrap; }
+        .badge-danger { background: var(--badge-danger); }
+        .badge-warning { background: var(--badge-warning); }
+        .badge-success { background: var(--badge-success); }
+        .badge-info { background: var(--badge-info); }
+        .badge-default { background: var(--badge-default); }
+        .badge-limit { display: block; font-size: 11px; color: var(--faint-text); margin-top: 4px; white-space: nowrap; }
 
-        .loading-box { display: flex; align-items: center; justify-content: center; padding: 48px; color: #9CA3AF; font-size: 14px; gap: 10px; }
-        .spinner { width: 20px; height: 20px; border: 2px solid #E5E7EB; border-top-color: #6366F1; border-radius: 50%; animation: spin .7s linear infinite; }
+        .loading-box { display: flex; align-items: center; justify-content: center; padding: 48px; color: var(--faint-text); font-size: 14px; gap: 10px; }
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--spinner-border); border-top-color: var(--spinner-top); border-radius: 50%; animation: spin .7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .type-pill { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-        .type-a { background: #EEF2FF; color: #4338CA; }
-        .type-c { background: #FEF3C7; color: #92400E; }
+        .type-a { background: var(--type-a-bg); color: var(--type-a-text); }
+        .type-c { background: var(--type-c-bg); color: var(--type-c-text); }
 
         @media (max-width: 768px) {
             .container { padding: 16px; }
@@ -98,16 +191,16 @@
         <div class="header">
             <div class="header-left">
                 <h1 class="header-title">限购查询</h1>
-                <span class="header-badge">🔒 基金限购</span>
+                <span class="header-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 基金限购</span>
             </div>
             <div class="header-right">
                 <div class="update-info" id="updateTime">加载中...</div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="exportAllData()">
+                    <button class="btn btn-secondary" onclick="exportAllData()" aria-label="导出数据">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         导出数据
                     </button>
-                    <a href="index.html" class="switch-btn">返回主页</a>
+                    <a href="index.html" class="switch-btn" aria-label="返回主页">返回主页</a>
                 </div>
             </div>
         </div>
@@ -116,25 +209,26 @@
             <div class="card-header">
                 <h2>纳斯达克100</h2>
                 <span class="fund-count" id="nasdaqCount">-</span>
+                <span class="buyable-amount" id="nasdaqBuyable"></span>
             </div>
             <div class="card-body">
                 <div id="loading" class="loading-box"><div class="spinner"></div>正在加载基金数据...</div>
                 <div class="table-scroll" id="nasdaqTableWrap" style="display:none;">
-                    <table id="fundTable">
+                    <table id="fundTable" aria-label="纳斯达克100基金列表">
                         <thead>
                             <tr>
-                                <th data-col="index" class="col-index">序号<span class="sort-icon">⇅</span></th>
-                                <th data-col="code" class="col-code">代码<span class="sort-icon">⇅</span></th>
-                                <th data-col="name" class="col-name">基金名称<span class="sort-icon">⇅</span></th>
-                                <th data-col="type" class="col-type">类型<span class="sort-icon">⇅</span></th>
-                                <th data-col="return1y" class="col-return1y">近1年<span class="sort-icon">⇅</span></th>
-                                <th data-col="netReturn" class="col-netreturn sort-desc">近一年收益<span class="sort-icon">⇅</span></th>
-                                <th data-col="status" class="col-status">交易状态<span class="sort-icon">⇅</span></th>
-                                <th data-col="purchaseFee" class="col-fee-col">购买手续费<span class="sort-icon">⇅</span></th>
-                                <th data-col="mgmtFee" class="col-fee-col">管理费率<span class="sort-icon">⇅</span></th>
-                                <th data-col="custodyFee" class="col-fee-col">托管费率<span class="sort-icon">⇅</span></th>
-                                <th data-col="salesFee" class="col-fee-col">销售服务费<span class="sort-icon">⇅</span></th>
-                                <th data-col="totalFee" class="col-fee-col">合计费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="index" class="col-index" aria-label="按序号排序">序号<span class="sort-icon">⇅</span></th>
+                                <th data-col="code" class="col-code" aria-label="按代码排序">代码<span class="sort-icon">⇅</span></th>
+                                <th data-col="name" class="col-name" aria-label="按名称排序">基金名称<span class="sort-icon">⇅</span></th>
+                                <th data-col="type" class="col-type" aria-label="按类型排序">类型<span class="sort-icon">⇅</span></th>
+                                <th data-col="return1y" class="col-return1y" aria-label="按近1年排序">近1年<span class="sort-icon">⇅</span></th>
+                                <th data-col="netReturn" class="col-netreturn sort-desc" aria-sort="descending" aria-label="按近一年收益排序">近一年收益<span class="sort-icon">▼</span></th>
+                                <th data-col="status" class="col-status" aria-label="按交易状态排序">交易状态<span class="sort-icon">⇅</span></th>
+                                <th data-col="purchaseFee" class="col-fee-col" aria-label="按购买手续费排序">购买手续费<span class="sort-icon">⇅</span></th>
+                                <th data-col="mgmtFee" class="col-fee-col" aria-label="按管理费率排序">管理费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="custodyFee" class="col-fee-col" aria-label="按托管费率排序">托管费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="salesFee" class="col-fee-col" aria-label="按销售服务费排序">销售服务费<span class="sort-icon">⇅</span></th>
+                                <th data-col="totalFee" class="col-fee-col" aria-label="按合计费率排序">合计费率<span class="sort-icon">⇅</span></th>
                             </tr>
                         </thead>
                         <tbody id="fundTableBody"></tbody>
@@ -147,25 +241,26 @@
             <div class="card-header">
                 <h2>标普500</h2>
                 <span class="fund-count" id="sp500Count">-</span>
+                <span class="buyable-amount" id="sp500Buyable"></span>
             </div>
             <div class="card-body">
                 <div id="sp500Loading" class="loading-box"><div class="spinner"></div>正在加载基金数据...</div>
                 <div class="table-scroll" id="sp500TableWrap" style="display:none;">
-                    <table id="sp500FundTable">
+                    <table id="sp500FundTable" aria-label="标普500基金列表">
                         <thead>
                             <tr>
-                                <th data-col="index" class="col-index">序号<span class="sort-icon">⇅</span></th>
-                                <th data-col="code" class="col-code">代码<span class="sort-icon">⇅</span></th>
-                                <th data-col="name" class="col-name">基金名称<span class="sort-icon">⇅</span></th>
-                                <th data-col="type" class="col-type">类型<span class="sort-icon">⇅</span></th>
-                                <th data-col="return1y" class="col-return1y">近1年<span class="sort-icon">⇅</span></th>
-                                <th data-col="netReturn" class="col-netreturn sort-desc">近一年收益<span class="sort-icon">⇅</span></th>
-                                <th data-col="status" class="col-status">交易状态<span class="sort-icon">⇅</span></th>
-                                <th data-col="purchaseFee" class="col-fee-col">购买手续费<span class="sort-icon">⇅</span></th>
-                                <th data-col="mgmtFee" class="col-fee-col">管理费率<span class="sort-icon">⇅</span></th>
-                                <th data-col="custodyFee" class="col-fee-col">托管费率<span class="sort-icon">⇅</span></th>
-                                <th data-col="salesFee" class="col-fee-col">销售服务费<span class="sort-icon">⇅</span></th>
-                                <th data-col="totalFee" class="col-fee-col">合计费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="index" class="col-index" aria-label="按序号排序">序号<span class="sort-icon">⇅</span></th>
+                                <th data-col="code" class="col-code" aria-label="按代码排序">代码<span class="sort-icon">⇅</span></th>
+                                <th data-col="name" class="col-name" aria-label="按名称排序">基金名称<span class="sort-icon">⇅</span></th>
+                                <th data-col="type" class="col-type" aria-label="按类型排序">类型<span class="sort-icon">⇅</span></th>
+                                <th data-col="return1y" class="col-return1y" aria-label="按近1年排序">近1年<span class="sort-icon">⇅</span></th>
+                                <th data-col="netReturn" class="col-netreturn sort-desc" aria-sort="descending" aria-label="按近一年收益排序">近一年收益<span class="sort-icon">▼</span></th>
+                                <th data-col="status" class="col-status" aria-label="按交易状态排序">交易状态<span class="sort-icon">⇅</span></th>
+                                <th data-col="purchaseFee" class="col-fee-col" aria-label="按购买手续费排序">购买手续费<span class="sort-icon">⇅</span></th>
+                                <th data-col="mgmtFee" class="col-fee-col" aria-label="按管理费率排序">管理费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="custodyFee" class="col-fee-col" aria-label="按托管费率排序">托管费率<span class="sort-icon">⇅</span></th>
+                                <th data-col="salesFee" class="col-fee-col" aria-label="按销售服务费排序">销售服务费<span class="sort-icon">⇅</span></th>
+                                <th data-col="totalFee" class="col-fee-col" aria-label="按合计费率排序">合计费率<span class="sort-icon">⇅</span></th>
                             </tr>
                         </thead>
                         <tbody id="sp500FundTableBody"></tbody>
@@ -222,6 +317,33 @@
             return type === 'C'
                 ? '<span class="type-pill type-c">C</span>'
                 : '<span class="type-pill type-a">A</span>';
+        }
+
+        function calcBuyableAmount(fundList) {
+            var total = 0;
+            fundList.forEach(function(f) {
+                var status = f['交易状态'] || '';
+                if (status.indexOf('暂停申购') !== -1) return;
+                var m = status.match(/单日累计购买上限([\d.]+)(万?)元/);
+                if (m) {
+                    var val = parseFloat(m[1]) || 0;
+                    if (m[2] === '万') val = val * 10000;
+                    total += val;
+                }
+            });
+            return total;
+        }
+
+        function formatBuyableAmount(total) {
+            if (total >= 10000) return (total / 10000).toFixed(2) + '万元';
+            return total.toFixed(0) + '元';
+        }
+
+        function updateBuyableDisplay(elId, fundList) {
+            var el = document.getElementById(elId);
+            if (!el) return;
+            var total = calcBuyableAmount(fundList);
+            el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> 可买入：' + formatBuyableAmount(total);
         }
 
         function formatNetReturn(y, f) {
@@ -302,10 +424,18 @@
 
         function handleSort(tid, tbid, col, list) {
             var th = document.querySelector('#' + tid + ' th[data-col="' + col + '"]');
-            document.querySelectorAll('#' + tid + ' th').forEach(function(t) { t.className = ''; });
+            document.querySelectorAll('#' + tid + ' th').forEach(function(t) {
+                t.className = t.className.replace(/sort-asc|sort-desc/g, '').trim();
+                t.removeAttribute('aria-sort');
+                var icon = t.querySelector('.sort-icon');
+                if (icon) icon.textContent = '⇅';
+            });
             if (sortState.table === tid && sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
             else { sortState.table = tid; sortState.col = col; sortState.dir = 'desc'; }
-            th.className = sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc';
+            th.className = th.className ? th.className + ' ' + (sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc') : (sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+            th.setAttribute('aria-sort', sortState.dir === 'asc' ? 'ascending' : 'descending');
+            var icon = th.querySelector('.sort-icon');
+            if (icon) icon.textContent = sortState.dir === 'asc' ? '▲' : '▼';
             if (tid === 'fundTable') renderFunds(false); else renderSp500Funds(false);
         }
 
@@ -391,15 +521,19 @@
                         else if (f['分类'] === 'sp500') sp500Funds.push(o);
                     });
                     renderFunds(true); renderSp500Funds(true); setupSortHandlers();
+                    updateBuyableDisplay('nasdaqBuyable', funds);
+                    updateBuyableDisplay('sp500Buyable', sp500Funds);
                     if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 更新数据'; }
                     var n = new Date();
                     t.textContent = '最后更新：' + n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0') + ' ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-                    t.style.color = '#9CA3AF';
+                    t.style.color = '';
                 })
                 .catch(function() {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 更新数据'; }
                     t.textContent = '数据加载失败'; t.style.color = '#EF4444';
                     renderFunds(true); renderSp500Funds(true); setupSortHandlers();
+                    updateBuyableDisplay('nasdaqBuyable', funds);
+                    updateBuyableDisplay('sp500Buyable', sp500Funds);
                 });
         }
 

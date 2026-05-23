@@ -523,10 +523,11 @@
                             <tr>
                                 <th>日期</th>
                                 <th>情绪</th>
-                                <th>NDX涨跌</th>
-                                <th>SPX涨跌</th>
+                                <th>5日涨跌</th>
+                                <th>5日验证</th>
+                                <th>10日涨跌</th>
+                                <th>10日验证</th>
                                 <th>背离</th>
-                                <th>验证结果</th>
                             </tr>
                         </thead>
                         <tbody id="records-tbody"></tbody>
@@ -861,7 +862,7 @@
             const recent = dailyLogData.slice(-20).reverse();
             const filtered = recent.filter(entry => {
                 if (currentFilter === 'all') return true;
-                if (currentFilter === 'wrong') return entry.verify_5d?.result === 'wrong';
+                if (currentFilter === 'wrong') return entry.verify_5d?.result === 'wrong' || entry.verify_10d?.result === 'wrong';
                 if (currentFilter === 'pending') return entry.verify_5d?.status === 'pending';
                 return true;
             });
@@ -869,29 +870,45 @@
             let html = '';
             filtered.forEach(entry => {
                 const verify5 = entry.verify_5d;
-                let tagClass = 'pending';
-                let tagText = '待验证';
+                const verify10 = entry.verify_10d;
+                let tagClass5 = 'pending';
+                let tagText5 = '待验证';
+                let tagClass10 = 'pending';
+                let tagText10 = '待验证';
                 
                 if (verify5?.status === 'verified') {
-                    if (verify5.result === 'correct') { tagClass = 'correct'; tagText = '正确'; }
-                    else if (verify5.result === 'wrong') { tagClass = 'wrong'; tagText = '误判'; }
-                    else { tagClass = 'neutral'; tagText = '中性'; }
+                    if (verify5.result === 'correct') { tagClass5 = 'correct'; tagText5 = '正确'; }
+                    else if (verify5.result === 'wrong') { tagClass5 = 'wrong'; tagText5 = '误判'; }
+                    else { tagClass5 = 'neutral'; tagText5 = '中性'; }
+                }
+
+                if (verify10?.status === 'verified') {
+                    if (verify10.result === 'correct') { tagClass10 = 'correct'; tagText10 = '正确'; }
+                    else if (verify10.result === 'wrong') { tagClass10 = 'wrong'; tagText10 = '误判'; }
+                    else { tagClass10 = 'neutral'; tagText10 = '中性'; }
                 }
                 
-                const ndxRet = typeof verify5?.ndx_return === 'number' ? verify5.ndx_return.toFixed(2) + '%' : '--';
-                const spxRet = typeof verify5?.spx_return === 'number' ? verify5.spx_return.toFixed(2) + '%' : '--';
-                const divergence = verify5?.divergence || '--';
+                const ndxRet5 = typeof verify5?.ndx_return === 'number' ? (verify5.ndx_return > 0 ? '+' : '') + verify5.ndx_return.toFixed(2) + '%' : '--';
+                const spxRet5 = typeof verify5?.spx_return === 'number' ? (verify5.spx_return > 0 ? '+' : '') + verify5.spx_return.toFixed(2) + '%' : '--';
+                const ret5 = (ndxRet5 !== '--' || spxRet5 !== '--') ? `N:${ndxRet5} S:${spxRet5}` : '--';
+
+                const ndxRet10 = typeof verify10?.ndx_return === 'number' ? (verify10.ndx_return > 0 ? '+' : '') + verify10.ndx_return.toFixed(2) + '%' : '--';
+                const spxRet10 = typeof verify10?.spx_return === 'number' ? (verify10.spx_return > 0 ? '+' : '') + verify10.spx_return.toFixed(2) + '%' : '--';
+                const ret10 = (ndxRet10 !== '--' || spxRet10 !== '--') ? `N:${ndxRet10} S:${spxRet10}` : '--';
+
+                const divergence = verify5?.divergence || verify10?.divergence || '--';
                 
                 html += `<tr>
                     <td>${entry.date}</td>
                     <td>${entry.signal?.emotion || '--'}</td>
-                    <td>${ndxRet}</td>
-                    <td>${spxRet}</td>
+                    <td>${ret5}</td>
+                    <td><span class="tag ${tagClass5}">${tagText5}</span></td>
+                    <td>${ret10}</td>
+                    <td><span class="tag ${tagClass10}">${tagText10}</span></td>
                     <td>${divergence}</td>
-                    <td><span class="tag ${tagClass}">${tagText}</span></td>
                 </tr>`;
             });
-            tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+            tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
         }
         
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -953,14 +970,16 @@
 
             const latestLogs = dailyLogs.slice(-30);
             const verifiedLogs = latestLogs.filter(x => x.verify_5d && x.verify_5d.status === 'verified');
-            const wrongLogs = verifiedLogs.filter(x => x.verify_5d.result === 'wrong');
-            const correctLogs = verifiedLogs.filter(x => x.verify_5d.result === 'correct');
+            const wrongLogs = verifiedLogs.filter(x => x.verify_5d.result === 'wrong' || x.verify_10d?.result === 'wrong');
+            const correctLogs = verifiedLogs.filter(x => x.verify_5d.result === 'correct' || x.verify_10d?.result === 'correct');
 
             let logsText = '';
             latestLogs.forEach(log => {
-                const v = log.verify_5d;
-                let resultText = v ? (v.status === 'verified' ? (v.result === 'correct' ? '正确' : '误判') : '待验证') : '无';
-                logsText += `日期:${log.date} 情绪:${log.signal?.emotion} 触发条件:${JSON.stringify(log.signal?.triggered_conditions)} NDX涨跌:${v?.ndx_return}% SPX涨跌:${v?.spx_return}% 结果:${resultText}\n`;
+                const v5 = log.verify_5d;
+                const v10 = log.verify_10d;
+                let resultText5 = v5 ? (v5.status === 'verified' ? (v5.result === 'correct' ? '正确' : v5.result === 'wrong' ? '误判' : '中性') : '待验证') : '无';
+                let resultText10 = v10 ? (v10.status === 'verified' ? (v10.result === 'correct' ? '正确' : v10.result === 'wrong' ? '误判' : '中性') : '待验证') : '无';
+                logsText += `日期:${log.date} 情绪:${log.signal?.emotion} 触发条件:${JSON.stringify(log.signal?.triggered_conditions)} 5日-NDX:${v5?.ndx_return}% SPX:${v5?.spx_return}% ${resultText5} | 10日-NDX:${v10?.ndx_return}% SPX:${v10?.spx_return}% ${resultText10}\n`;
             });
 
             let recordsText = '';

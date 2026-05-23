@@ -5,15 +5,158 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>复盘进化 - 美股情绪监测</title>
     <style>
+        :root {
+            --bg-primary: #F9FAFB;
+            --bg-card: #FFFFFF;
+            --bg-metric: #F9FAFB;
+            --bg-metric-end: #F3F4F6;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --border-color: #E5E7EB;
+            --border-light: #D1D5DB;
+            --bg-bar-track: #E5E7EB;
+            --bg-input: #FFFFFF;
+            --bg-input-disabled: #F5F5F5;
+            --text-input-disabled: #999999;
+            --text-modal-label: #333333;
+            --text-modal-hint: #999999;
+            --border-input: #DDDDDD;
+            --border-modal-btns: #EEEEEE;
+            --bg-modal-btn-save: #333333;
+            --bg-modal-btn-save-hover: #1A1A1A;
+            --bg-modal-btn-clear: #FFFFFF;
+            --text-modal-btn-clear: #666666;
+            --bg-modal-btn-clear-hover: #F5F5F5;
+            --bg-tag-neutral: #F3F4F6;
+            --text-tag-neutral: #374151;
+            --bg-skeleton: #E5E7EB;
+            --bg-skeleton-shine: #F3F4F6;
+            --shadow-card: 0 4px 12px rgba(0,0,0,0.05);
+            --shadow-modal: 0 20px 60px rgba(0,0,0,0.2);
+            --tooltip-bg: #333333;
+            --tooltip-color: #FFFFFF;
+            --chart-grid-color: rgba(0,0,0,0.08);
+            --bg-code: #F3F4F6;
+            --bg-settings-btn: #F3F4F6;
+            --bg-settings-btn-hover: #E5E7EB;
+            --text-settings-btn: #6B7280;
+            --text-settings-btn-hover: #374151;
+            --bg-copy-btn: #F9FAFB;
+            --text-copy-btn: #374151;
+            --bg-reject-btn: #F9FAFB;
+            --text-reject-btn: #6B7280;
+            --bg-reject-btn-hover: #F3F4F6;
+            --border-reject-btn-hover: #9CA3AF;
+            --bg-filter-btn: #FFFFFF;
+            --bg-input-focus-shadow: rgba(74,144,226,0.1);
+            --border-input-focus: #4A90E2;
+            --text-link: #4A90E2;
+            --color-error: #E53E3E;
+            --color-error-hover: #B91C1C;
+            --bg-error-light: #FEF2F2;
+            --border-error-light: #FECACA;
+            --text-error-dark: #991B1B;
+            --text-error-mid: #B91C1C;
+            --color-success: #059669;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --bg-sticky-col: #FFFFFF;
+            --bg-sticky-header: #F9FAFB;
+            --bg-modal: #FFFFFF;
+            --text-modal-title: #111827;
+            --modal-overlay: rgba(0,0,0,0.5);
+            --bg-toast-success: #F0FDF4;
+            --text-toast-success: #166534;
+            --border-toast-success: #BBF7D0;
+            --bg-toast-info: #EFF6FF;
+            --text-toast-info: #1E40AF;
+            --border-toast-info: #BFDBFE;
+            --scroll-shadow-color: rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0F172A;
+                --bg-card: #1E293B;
+                --bg-metric: #1E293B;
+                --bg-metric-end: #334155;
+                --text-primary: #F1F5F9;
+                --text-secondary: #94A3B8;
+                --text-tertiary: #64748B;
+                --border-color: #334155;
+                --border-light: #475569;
+                --bg-bar-track: #334155;
+                --bg-input: #334155;
+                --bg-input-disabled: #475569;
+                --text-input-disabled: #64748B;
+                --text-modal-label: #E2E8F0;
+                --text-modal-hint: #64748B;
+                --border-input: #475569;
+                --border-modal-btns: #334155;
+                --bg-modal-btn-save: #475569;
+                --bg-modal-btn-save-hover: #64748B;
+                --bg-modal-btn-clear: #334155;
+                --text-modal-btn-clear: #94A3B8;
+                --bg-modal-btn-clear-hover: #475569;
+                --bg-tag-neutral: #334155;
+                --text-tag-neutral: #E2E8F0;
+                --bg-skeleton: #334155;
+                --bg-skeleton-shine: #475569;
+                --shadow-card: 0 4px 12px rgba(0,0,0,0.4);
+                --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
+                --tooltip-bg: #1E293B;
+                --tooltip-color: #F1F5F9;
+                --chart-grid-color: rgba(255,255,255,0.08);
+                --bg-code: #334155;
+                --bg-settings-btn: #334155;
+                --bg-settings-btn-hover: #475569;
+                --text-settings-btn: #94A3B8;
+                --text-settings-btn-hover: #E2E8F0;
+                --bg-copy-btn: #334155;
+                --text-copy-btn: #E2E8F0;
+                --bg-reject-btn: #334155;
+                --text-reject-btn: #94A3B8;
+                --bg-reject-btn-hover: #475569;
+                --border-reject-btn-hover: #64748B;
+                --bg-filter-btn: #334155;
+                --bg-input-focus-shadow: rgba(74,144,226,0.2);
+                --border-input-focus: #4A90E2;
+                --text-link: #60A5FA;
+                --color-error: #F87171;
+                --color-error-hover: #FCA5A5;
+                --bg-error-light: #450A0A;
+                --border-error-light: #7F1D1D;
+                --text-error-dark: #FCA5A5;
+                --text-error-mid: #F87171;
+                --color-success: #34D399;
+                --color-warning: #FBBF24;
+                --color-danger: #F87171;
+                --bg-sticky-col: #1E293B;
+                --bg-sticky-header: #1E293B;
+                --bg-modal: #1E293B;
+                --text-modal-title: #F1F5F9;
+                --modal-overlay: rgba(0,0,0,0.7);
+                --bg-toast-success: #064E3B;
+                --text-toast-success: #6EE7B7;
+                --border-toast-success: #065F46;
+                --bg-toast-info: #1E3A5F;
+                --text-toast-info: #93C5FD;
+                --border-toast-info: #1E40AF;
+                --scroll-shadow-color: rgba(0,0,0,0.3);
+            }
+        }
         * {
             box-sizing: border-box;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
-            background-color: #F9FAFB;
-            color: #111827;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
+        }
+        .hidden {
+            display: none !important;
         }
         .container {
             max-width: 1280px;
@@ -36,7 +179,7 @@
         .header-title {
             font-size: 28px;
             font-weight: 800;
-            color: #111827;
+            color: var(--text-primary);
             margin: 0;
         }
         .header-badge {
@@ -50,9 +193,9 @@
         }
         .header-right {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 12px;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
         }
         .switch-btn {
             background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
@@ -73,11 +216,11 @@
             box-shadow: 0 6px 16px rgba(37,99,235,0.35);
         }
         .dashboard-panel {
-            background: white;
+            background: var(--bg-card);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid #E5E7EB;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
             margin-bottom: 24px;
         }
         .panel-header {
@@ -109,31 +252,31 @@
             min-width: 0;
         }
         .stat-card {
-            background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+            background: linear-gradient(135deg, var(--bg-metric) 0%, var(--bg-metric-end) 100%);
             border-radius: 12px;
             padding: 16px 10px;
             text-align: center;
-            border: 1px solid #E5E7EB;
+            border: 1px solid var(--border-color);
             position: relative;
         }
         .stat-label {
             font-size: 12px;
-            color: #6B7280;
+            color: var(--text-secondary);
             margin-bottom: 6px;
         }
         .stat-value {
             font-size: 22px;
             font-weight: 800;
-            color: #111827;
+            color: var(--text-primary);
             margin-bottom: 2px;
         }
         .stat-sub {
             font-size: 12px;
-            color: #9CA3AF;
+            color: var(--text-tertiary);
         }
         .stat-formula {
             font-size: 11px;
-            color: #9CA3AF;
+            color: var(--text-tertiary);
             margin-top: 4px;
         }
         .signal-card-tip {
@@ -143,8 +286,8 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #E5E7EB;
-            color: #6B7280;
+            background: var(--border-color);
+            color: var(--text-secondary);
             font-size: 12px;
             font-weight: 700;
             text-align: center;
@@ -156,8 +299,8 @@
             position: absolute;
             bottom: 130%;
             right: 0;
-            background: #333;
-            color: #fff;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-color);
             padding: 8px 12px;
             border-radius: 8px;
             font-size: 12px;
@@ -170,14 +313,21 @@
             display: block;
         }
         .chart-container {
-            background: #F9FAFB;
+            background: var(--bg-primary);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 24px;
+            position: relative;
         }
         canvas {
             width: 100%;
             height: 280px;
+        }
+        .chart-placeholder-msg {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 40px 0;
+            font-size: 14px;
         }
         .two-col-grid {
             display: grid;
@@ -186,7 +336,7 @@
             margin-bottom: 24px;
         }
         .bar-chart-container {
-            background: #F9FAFB;
+            background: var(--bg-primary);
             border-radius: 12px;
             padding: 20px;
         }
@@ -207,7 +357,7 @@
         .bar-wrapper {
             flex-grow: 1;
             height: 24px;
-            background: #E5E7EB;
+            background: var(--bg-bar-track);
             border-radius: 6px;
             overflow: hidden;
         }
@@ -226,19 +376,35 @@
         }
         .bar-bottom-note {
             font-size: 12px;
-            color: #9CA3AF;
+            color: var(--text-tertiary);
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid #E5E7EB;
+            border-top: 1px solid var(--border-color);
         }
         .records-container {
-            background: #F9FAFB;
+            background: var(--bg-primary);
             border-radius: 12px;
             padding: 20px;
         }
         .records-wrapper {
             overflow-x: auto;
             max-width: 100%;
+            position: relative;
+        }
+        .records-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to right, transparent, var(--scroll-shadow-color));
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .records-wrapper.has-scroll::after {
+            opacity: 1;
         }
         .records-title {
             font-weight: 700;
@@ -253,11 +419,12 @@
         }
         .filter-btn {
             padding: 6px 12px;
-            border: 1px solid #D1D5DB;
-            background: white;
+            border: 1px solid var(--border-light);
+            background: var(--bg-filter-btn);
             border-radius: 6px;
             font-size: 12px;
             cursor: pointer;
+            color: var(--text-primary);
         }
         .filter-btn.active {
             background: #2563EB;
@@ -272,18 +439,18 @@
         .records-table th,
         .records-table td {
             padding: 10px;
-            border-bottom: 1px solid #E5E7EB;
+            border-bottom: 1px solid var(--border-color);
             text-align: left;
         }
         .records-table th {
-            color: #6B7280;
+            color: var(--text-secondary);
             font-weight: 600;
-            background: #F9FAFB;
+            background: var(--bg-sticky-header);
         }
         .records-table .col-date {
             position: sticky;
             left: 0;
-            background: white;
+            background: var(--bg-sticky-col);
             z-index: 2;
             width: 120px;
             min-width: 120px;
@@ -291,40 +458,44 @@
         .records-table .col-sentiment {
             position: sticky;
             left: 120px;
-            background: white;
+            background: var(--bg-sticky-col);
             z-index: 2;
             width: 80px;
             min-width: 80px;
         }
         .records-table thead th.col-date,
         .records-table thead th.col-sentiment {
-            background: #F9FAFB;
+            background: var(--bg-sticky-header);
             z-index: 3;
         }
         .records-table td.col-date {
-            background: #fff;
+            background: var(--bg-sticky-col);
             z-index: 1;
         }
         .records-table td.col-sentiment {
-            background: #fff;
+            background: var(--bg-sticky-col);
             z-index: 1;
         }
         .records-table td {
             white-space: nowrap;
         }
-        .emotion-neutral { color: #9CA3AF; }
+        .emotion-neutral { color: var(--text-tertiary); }
         .emotion-panic { color: #F59E0B; }
-        .emotion-extreme-panic { color: #DC2626; }
+        .emotion-extreme-panic { color: var(--color-danger); }
         .emotion-greed { color: #6EE7B7; }
         .emotion-extreme-greed { color: #10B981; }
-        .return-positive { color: #059669; }
-        .return-negative { color: #DC2626; }
-        .return-placeholder { color: #9CA3AF; }
-        .verify-na { color: #9CA3AF; }
-        .accuracy-good { color: #059669; font-weight: 700; }
-        .accuracy-medium { color: #D97706; }
-        .accuracy-bad { color: #DC2626; }
-        .accuracy-placeholder { color: #9CA3AF; }
+        .return-positive { color: var(--color-success); }
+        .return-negative { color: var(--color-danger); }
+        .return-placeholder { color: var(--text-tertiary); }
+        .verify-na { color: var(--text-tertiary); }
+        .accuracy-good { color: var(--color-success); font-weight: 700; }
+        .accuracy-medium { color: var(--color-warning); }
+        .accuracy-bad { color: var(--color-danger); }
+        .accuracy-placeholder { color: var(--text-tertiary); }
+        .accuracy-color-default { color: var(--text-primary); }
+        .accuracy-color-good { color: var(--color-success); }
+        .accuracy-color-medium { color: var(--color-warning); }
+        .accuracy-color-bad { color: var(--color-danger); }
         .tag {
             padding: 4px 10px;
             border-radius: 9999px;
@@ -341,8 +512,8 @@
             color: #7F1D1D;
         }
         .tag.neutral {
-            background: #F3F4F6;
-            color: #374151;
+            background: var(--bg-tag-neutral);
+            color: var(--text-tag-neutral);
         }
         .tag.pending {
             background: #FEF3C7;
@@ -375,9 +546,9 @@
             cursor: not-allowed;
         }
         .gemini-settings-btn {
-            background: #F3F4F6;
-            border: 1px solid #D1D5DB;
-            color: #6B7280;
+            background: var(--bg-settings-btn);
+            border: 1px solid var(--border-light);
+            color: var(--text-settings-btn);
             width: 44px;
             height: 44px;
             border-radius: 10px;
@@ -389,8 +560,8 @@
             transition: all 0.2s ease;
         }
         .gemini-settings-btn:hover {
-            background: #E5E7EB;
-            color: #374151;
+            background: var(--bg-settings-btn-hover);
+            color: var(--text-settings-btn-hover);
         }
         .modal-overlay {
             display: none;
@@ -399,7 +570,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: var(--modal-overlay);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -408,12 +579,12 @@
             display: flex;
         }
         .modal-content {
-            background: white;
+            background: var(--bg-modal);
             border-radius: 12px;
             padding: 28px 24px 24px;
             width: 480px;
             max-width: 92vw;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow-modal);
             max-height: 85vh;
             overflow-y: auto;
         }
@@ -421,26 +592,26 @@
             font-size: 18px;
             font-weight: 700;
             margin: 0 0 24px 0;
-            color: #111827;
+            color: var(--text-modal-title);
         }
         .modal-field {
             margin-bottom: 20px;
         }
         .modal-field-label {
             font-size: 13px;
-            color: #333;
+            color: var(--text-modal-label);
             margin-bottom: 6px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
         .modal-field-label .required-star {
-            color: #E53E3E;
+            color: var(--color-error);
             margin-right: 4px;
         }
         .modal-field-link {
             font-size: 12px;
-            color: #4A90E2;
+            color: var(--text-link);
             text-decoration: none;
             cursor: pointer;
         }
@@ -449,36 +620,37 @@
         }
         .modal-field-hint {
             font-size: 12px;
-            color: #999;
+            color: var(--text-modal-hint);
             margin-top: 6px;
             line-height: 1.5;
         }
         .modal-input {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-input);
             border-radius: 6px;
             font-size: 14px;
             box-sizing: border-box;
             transition: border-color 0.2s;
-            background: #fff;
+            background: var(--bg-input);
+            color: var(--text-primary);
         }
         .modal-input:focus {
             outline: none;
-            border-color: #4A90E2;
-            box-shadow: 0 0 0 2px rgba(74,144,226,0.1);
+            border-color: var(--border-input-focus);
+            box-shadow: 0 0 0 2px var(--bg-input-focus-shadow);
         }
         .modal-input.error {
-            border-color: #E53E3E;
+            border-color: var(--color-error);
         }
         .modal-input:disabled {
-            background: #F5F5F5;
-            color: #999;
+            background: var(--bg-input-disabled);
+            color: var(--text-input-disabled);
             cursor: not-allowed;
         }
         .modal-input-error {
             font-size: 12px;
-            color: #E53E3E;
+            color: var(--color-error);
             margin-top: 4px;
             display: none;
         }
@@ -491,7 +663,7 @@
             justify-content: flex-end;
             margin-top: 24px;
             padding-top: 16px;
-            border-top: 1px solid #EEE;
+            border-top: 1px solid var(--border-modal-btns);
         }
         .modal-btn {
             padding: 8px 20px;
@@ -503,19 +675,19 @@
             transition: all 0.15s ease;
         }
         .modal-btn-save {
-            background: #333;
+            background: var(--bg-modal-btn-save);
             color: white;
         }
         .modal-btn-save:hover {
-            background: #1a1a1a;
+            background: var(--bg-modal-btn-save-hover);
         }
         .modal-btn-clear {
-            background: #fff;
-            color: #666;
-            border: 1px solid #ddd;
+            background: var(--bg-modal-btn-clear);
+            color: var(--text-modal-btn-clear);
+            border: 1px solid var(--border-input);
         }
         .modal-btn-clear:hover {
-            background: #F5F5F5;
+            background: var(--bg-modal-btn-clear-hover);
         }
         .modal-toast {
             display: none;
@@ -527,15 +699,15 @@
         }
         .modal-toast.success {
             display: block;
-            background: #F0FDF4;
-            color: #166534;
-            border: 1px solid #BBF7D0;
+            background: var(--bg-toast-success);
+            color: var(--text-toast-success);
+            border: 1px solid var(--border-toast-success);
         }
         .modal-toast.info {
             display: block;
-            background: #EFF6FF;
-            color: #1E40AF;
-            border: 1px solid #BFDBFE;
+            background: var(--bg-toast-info);
+            color: var(--text-toast-info);
+            border: 1px solid var(--border-toast-info);
         }
         .info-icon {
             display: inline-flex;
@@ -544,8 +716,8 @@
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            border: 1px solid #999;
-            color: #999;
+            border: 1px solid var(--text-modal-hint);
+            color: var(--text-modal-hint);
             font-size: 10px;
             font-weight: 700;
             cursor: help;
@@ -558,8 +730,8 @@
             bottom: 120%;
             left: 50%;
             transform: translateX(-50%);
-            background: #333;
-            color: #fff;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-color);
             padding: 6px 10px;
             border-radius: 6px;
             font-size: 12px;
@@ -571,13 +743,13 @@
             display: block;
         }
         .suggestions-panel {
-            background: white;
+            background: var(--bg-card);
             border-radius: 16px;
             padding: 24px;
             margin-top: 24px;
             display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid #E5E7EB;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
         }
         .suggestions-panel.active {
             display: block;
@@ -588,7 +760,7 @@
             align-items: center;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #E5E7EB;
+            border-bottom: 1px solid var(--border-color);
         }
         .gemini-result-title {
             font-size: 18px;
@@ -602,16 +774,16 @@
         .btn-copy {
             padding: 6px 14px;
             border-radius: 6px;
-            border: 1px solid #D1D5DB;
-            background: #F9FAFB;
-            color: #374151;
+            border: 1px solid var(--border-light);
+            background: var(--bg-copy-btn);
+            color: var(--text-copy-btn);
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .btn-copy:hover {
-            background: #E5E7EB;
+            background: var(--border-color);
         }
         .btn-copy.copied {
             background: #D1FAE5;
@@ -641,22 +813,22 @@
         .btn-reject {
             padding: 6px 14px;
             border-radius: 6px;
-            border: 1px solid #D1D5DB;
-            background: #F9FAFB;
-            color: #6B7280;
+            border: 1px solid var(--border-light);
+            background: var(--bg-reject-btn);
+            color: var(--text-reject-btn);
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .btn-reject:hover {
-            background: #F3F4F6;
-            border-color: #9CA3AF;
+            background: var(--bg-reject-btn-hover);
+            border-color: var(--border-reject-btn-hover);
         }
         .btn-reject.adopted {
-            background: #E5E7EB;
-            border-color: #D1D5DB;
-            color: #9CA3AF;
+            background: var(--border-color);
+            border-color: var(--border-light);
+            color: var(--text-tertiary);
         }
         .disabled-btn {
             opacity: 0.5;
@@ -666,27 +838,27 @@
             word-break: break-all;
         }
         .gemini-result-content {
-            color: #374151;
+            color: var(--text-tag-neutral);
             font-size: 14px;
             line-height: 1.8;
             white-space: pre-wrap;
             word-break: break-word;
         }
         .gemini-result-error {
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
+            background: var(--bg-error-light);
+            border: 1px solid var(--border-error-light);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
         }
         .gemini-error-title {
-            color: #991B1B;
+            color: var(--text-error-dark);
             font-weight: 700;
             font-size: 14px;
             margin-bottom: 8px;
         }
         .gemini-error-detail {
-            color: #B91C1C;
+            color: var(--text-error-mid);
             font-size: 13px;
             margin-bottom: 12px;
         }
@@ -694,7 +866,7 @@
             padding: 8px 16px;
             border-radius: 8px;
             border: none;
-            background: #DC2626;
+            background: var(--color-danger);
             color: white;
             font-weight: 600;
             font-size: 13px;
@@ -702,7 +874,7 @@
             transition: all 0.15s ease;
         }
         .gemini-error-btn:hover {
-            background: #B91C1C;
+            background: var(--color-error-hover);
         }
         .btn {
             padding: 10px 20px;
@@ -716,9 +888,115 @@
             color: white;
         }
         .btn-secondary {
-            background: #F3F4F6;
-            color: #374151;
+            background: var(--bg-tag-neutral);
+            color: var(--text-tag-neutral);
         }
+        .col-w15 { width: 15%; }
+        .col-w55 { width: 55%; }
+        .mb-20 { margin-bottom: 20px; }
+        .td-center-muted { text-align: center; color: var(--text-tertiary); }
+        .md-h1 { font-size:20px; font-weight:800; margin:20px 0 10px; color:var(--text-primary); }
+        .md-h2 { font-size:18px; font-weight:700; margin:18px 0 10px; color:var(--text-primary); }
+        .md-h3 { font-size:16px; font-weight:700; margin:16px 0 8px; color:var(--text-primary); }
+        .md-li { margin-bottom:6px; }
+        .md-code { background:var(--bg-code); padding:2px 6px; border-radius:4px; font-size:13px; }
+        .md-p { margin:8px 0; }
+        .md-ul { padding-left:20px; margin:8px 0; }
+        .md-ol { padding-left:20px; margin:8px 0; }
+        .skeleton-line {
+            height: 16px;
+            background: linear-gradient(90deg, var(--bg-skeleton) 25%, var(--bg-skeleton-shine) 50%, var(--bg-skeleton) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+        .skeleton-w100 { width: 100%; }
+        .skeleton-w80 { width: 80%; }
+        .skeleton-w60 { width: 60%; }
+        .skeleton-bar-row {
+            height: 24px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, var(--bg-skeleton) 25%, var(--bg-skeleton-shine) 50%, var(--bg-skeleton) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+            width: 70%;
+        }
+        .chart-skeleton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 1;
+        }
+        .dashboard-panel.loading .stat-value,
+        .dashboard-panel.loading .stat-sub {
+            color: transparent !important;
+            min-height: 1em;
+            display: inline-block;
+            background: linear-gradient(90deg, var(--bg-skeleton) 25%, var(--bg-skeleton-shine) 50%, var(--bg-skeleton) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            min-width: 40px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: toast-in 0.3s ease;
+            max-width: 400px;
+            pointer-events: auto;
+        }
+        .toast-success { background: var(--color-success); color: white; }
+        .toast-error { background: var(--color-danger); color: white; }
+        .toast-info { background: #2563EB; color: white; }
+        .toast.toast-out { animation: toast-out 0.3s ease forwards; }
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes toast-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        @media (prefers-color-scheme: dark) {
+            .tag.correct { background: #064E3B; color: #6EE7B7; }
+            .tag.wrong { background: #7F1D1D; color: #FCA5A5; }
+            .tag.pending { background: #78350F; color: #FDE68A; }
+            .btn-copy.copied { background: #064E3B; border-color: #34D399; color: #6EE7B7; }
+            .btn-adopt.adopted { background: #064E3B; border-color: #34D399; color: #6EE7B7; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        @keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        body { animation: page-fade-in 0.3s ease; }
         @media (max-width: 1024px) {
             .two-col-grid {
                 grid-template-columns: 1fr;
@@ -731,9 +1009,370 @@
                 min-width: 140px;
             }
         }
+
+        .ta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+        }
+        .ta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.4); }
+        .ta-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .ta-settings-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: var(--bg-settings-btn);
+            color: var(--text-settings-btn);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ta-settings-btn:hover { background: var(--bg-settings-btn-hover); color: var(--text-settings-btn-hover); }
+
+        .ta-drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .ta-drawer-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .ta-drawer {
+            position: fixed;
+            top: 0; right: -520px;
+            width: 520px;
+            max-width: 90vw;
+            height: 100vh;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s ease;
+        }
+        .ta-drawer.active { right: 0; }
+
+        .ta-drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+        }
+        .ta-drawer-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .ta-drawer-close {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.2);
+            border: none; border-radius: 6px;
+            color: #fff; font-size: 18px;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .ta-drawer-close:hover { background: rgba(255,255,255,0.3); }
+
+        .ta-data-bar {
+            padding: 10px 20px;
+            background: var(--bg-metric);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .ta-data-bar-toggle {
+            color: var(--text-link);
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 11px;
+        }
+        .ta-data-bar-full {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 11px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .ta-data-bar-full.show { display: block; }
+
+        .ta-agent-status {
+            display: flex;
+            gap: 6px;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+        .ta-agent-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg-tag-neutral);
+            color: var(--text-tag-neutral);
+        }
+        .ta-agent-tag.working { background: #fef3c7; color: #92400e; }
+        .ta-agent-tag.completed { background: #d1fae5; color: #065f46; }
+        .ta-agent-tag.error { background: #fee2e2; color: #991b1b; }
+
+        .ta-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ta-msg {
+            max-width: 95%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+        .ta-msg-user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+        .ta-msg-agent {
+            align-self: flex-start;
+            background: var(--bg-metric);
+            color: var(--text-primary);
+            border-bottom-left-radius: 2px;
+        }
+        .ta-msg-system {
+            align-self: center;
+            background: #f0f4ff;
+            color: #4f46e5;
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+        .ta-msg-decision {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            border-bottom-left-radius: 2px;
+        }
+        .ta-msg-error {
+            align-self: flex-start;
+            background: var(--bg-error-light);
+            color: var(--text-error-dark);
+            border: 1px solid var(--border-error-light);
+            border-bottom-left-radius: 2px;
+        }
+        .ta-msg-label {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+        .ta-msg-signal {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        .ta-msg-signal.buy { background: #dcfce7; color: #166534; }
+        .ta-msg-signal.sell { background: #fee2e2; color: #991b1b; }
+        .ta-msg-signal.hold { background: #fef3c7; color: #92400e; }
+
+        .ta-input-area {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+        .ta-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .ta-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-input);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+        .ta-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .ta-send-btn {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .ta-send-btn:hover { opacity: 0.9; }
+        .ta-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ta-cancel-btn {
+            padding: 10px 14px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .ta-cancel-btn:hover { background: #dc2626; }
+        .ta-mode-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .ta-mode-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary, #e8e8e8);
+            border-radius: 8px;
+            padding: 3px;
+        }
+        .ta-mode-tab {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary, #666);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .ta-mode-tab.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        .ta-mode-tab:hover:not(.active) { color: var(--text-primary); }
+        .ta-mode-hint {
+            font-size: 11px;
+            color: var(--text-secondary, #888);
+        }
+        .ta-quick-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .ta-quick-btn {
+            padding: 4px 10px;
+            background: var(--bg-tag-neutral);
+            color: var(--text-tag-neutral);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .ta-quick-btn:hover { background: var(--bg-settings-btn-hover); }
+
+        .ta-typing {
+            display: flex;
+            gap: 4px;
+            padding: 8px 14px;
+            align-self: flex-start;
+        }
+        .ta-typing span {
+            width: 6px; height: 6px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
+            animation: ta-blink 1.4s infinite both;
+        }
+        .ta-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .ta-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes ta-blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+
+        .ta-config-modal .modal-content { max-width: 480px; position: relative; }
+        .ta-config-modal .modal-close-btn {
+            position: absolute; top: 12px; right: 12px;
+            width: 32px; height: 32px; border: none; border-radius: 50%;
+            background: var(--bg-secondary, #f0f0f0); color: var(--text-secondary, #666);
+            font-size: 16px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: all 0.2s; z-index: 1;
+        }
+        .ta-config-modal .modal-close-btn:hover { background: #e0e0e0; color: #333; }
+        .modal-field-hint { font-size: 12px; color: var(--text-secondary, #888); margin-top: 4px; }
+        .ta-provider-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .ta-provider-opt {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .ta-provider-opt:hover { border-color: #6366f1; }
+        .ta-provider-opt.selected { border-color: #6366f1; background: rgba(99,102,241,0.1); color: #6366f1; }
+        .ta-provider-opt small { display: block; font-weight: 400; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+
+        .ta-analyst-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ta-analyst-opt {
+            padding: 4px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ta-analyst-opt.selected { border-color: #6366f1; background: rgba(99,102,241,0.1); color: #6366f1; }
     </style>
 </head>
 <body>
+    <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
     <div class="container">
         <div class="header">
             <div class="header-left">
@@ -741,12 +1380,14 @@
                 <span class="header-badge">准确率看板</span>
             </div>
             <div class="header-right">
-                <a href="index.html" class="switch-btn">返回主页面</a>
+                <button id="taBtn" class="ta-btn" onclick="openTADrawer()" aria-label="与 TradingAgents 团队对话">🤖 TradingAgents</button>
+                <button id="taSettingsBtn" class="ta-settings-btn" onclick="showTAConfig()" title="配置 TradingAgents" aria-label="配置 TradingAgents">⚙</button>
+                <a href="index.html" class="switch-btn" aria-label="返回主页面">返回主页面</a>
             </div>
         </div>
-        
-        <div class="dashboard-panel">
-            <div class="panel-header">
+
+        <div class="dashboard-panel loading" id="dashboardPanel">
+            <div class="panel-header" role="button" tabindex="0" aria-expanded="true" aria-label="展开或收起准确率看板">
                 <div class="panel-title">📊 实时准确率看板</div>
                 <div class="panel-toggle">▼</div>
             </div>
@@ -784,25 +1425,43 @@
                         <div class="stat-sub">天</div>
                     </div>
                 </div>
-                
+
                 <div class="chart-container">
+                    <div class="chart-skeleton" id="chartSkeleton">
+                        <div class="skeleton-line skeleton-w100"></div>
+                        <div class="skeleton-line skeleton-w80"></div>
+                        <div class="skeleton-line skeleton-w60"></div>
+                    </div>
                     <canvas id="accuracyChart"></canvas>
                 </div>
-                
+
                 <div class="two-col-grid">
                     <div class="bar-chart-container">
                         <div class="bar-chart-title">各情绪级别命中率</div>
-                        <div id="emotion-bars"></div>
+                        <div id="emotion-bars">
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                        </div>
                         <div class="bar-bottom-note" id="emotion-bottom-note"></div>
                     </div>
                     <div class="bar-chart-container">
                         <div class="bar-chart-title">各指标触发贡献度</div>
-                        <div id="indicator-bars"></div>
+                        <div id="indicator-bars">
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                            <div class="skeleton-bar-row"></div>
+                        </div>
                         <div class="bar-bottom-note" id="indicator-bottom-note"></div>
                     </div>
                 </div>
-                
-                <div class="records-container" style="margin-bottom:20px;">
+
+                <div class="records-container mb-20">
                     <div class="records-title">
                         <span>复盘记录</span>
                     </div>
@@ -810,14 +1469,14 @@
                     <table class="records-table">
                         <thead>
                             <tr>
-                                <th style="width:15%;">复盘日期</th>
-                                <th style="width:15%;">分析结果</th>
-                                <th style="width:15%;">操作</th>
-                                <th style="width:55%;">备注</th>
+                                <th class="col-w15">复盘日期</th>
+                                <th class="col-w15">分析结果</th>
+                                <th class="col-w15">操作</th>
+                                <th class="col-w55">备注</th>
                             </tr>
                         </thead>
                         <tbody id="review-history-tbody">
-                            <tr><td colspan="4" style="text-align:center;color:#9CA3AF">暂无复盘记录</td></tr>
+                            <tr><td colspan="4" class="td-center-muted">暂无复盘记录</td></tr>
                         </tbody>
                     </table>
                     </div>
@@ -826,11 +1485,11 @@
                 <div class="records-container">
                     <div class="records-title">
                         <span>最近信号记录</span>
-                        <div class="filters">
-                            <button class="filter-btn active" data-filter="all">全部</button>
-                            <button class="filter-btn" data-filter="signal">买卖信号</button>
-                            <button class="filter-btn" data-filter="wrong">误判</button>
-                            <button class="filter-btn" data-filter="pending">待验证</button>
+                        <div class="filters" role="group" aria-label="信号筛选">
+                            <button class="filter-btn active" data-filter="all" aria-pressed="true">全部</button>
+                            <button class="filter-btn" data-filter="signal" aria-pressed="false">买卖信号</button>
+                            <button class="filter-btn" data-filter="wrong" aria-pressed="false">误判</button>
+                            <button class="filter-btn" data-filter="pending" aria-pressed="false">待验证</button>
                         </div>
                     </div>
                     <div class="records-wrapper">
@@ -857,28 +1516,28 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="bottom-actions">
-            <button id="geminiBtn" class="gemini-btn" onclick="requestGeminiSuggestions()">让 Gemini 分析误判规律并给出优化建议 ↗</button>
-            <button id="geminiSettingsBtn" class="gemini-settings-btn" onclick="showGeminiSettings()" title="配置 API Key">⚙</button>
+            <button id="geminiBtn" class="gemini-btn" onclick="requestGeminiSuggestions()" aria-label="让 Gemini 分析误判规律">让 Gemini 分析误判规律并给出优化建议 ↗</button>
+            <button id="geminiSettingsBtn" class="gemini-settings-btn" onclick="showGeminiSettings()" title="配置 API Key" aria-label="配置 Gemini API Key">⚙</button>
         </div>
-        
+
         <div class="suggestions-panel" id="suggestionsPanel">
             <div class="gemini-result-header">
                 <h3 class="gemini-result-title">✨ Gemini 优化建议</h3>
                 <div class="gemini-result-actions" id="geminiResultActions">
-                    <button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()">复制全文</button>
-                    <button class="btn btn-secondary" onclick="closeSuggestions()">关闭</button>
+                    <button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()" aria-label="复制分析结果">复制全文</button>
+                    <button class="btn btn-secondary" onclick="closeSuggestions()" aria-label="关闭建议面板">关闭</button>
                 </div>
             </div>
             <div id="geminiErrorArea"></div>
             <div class="gemini-result-content" id="geminiResultContent"></div>
         </div>
     </div>
-    
-    <div class="modal-overlay" id="geminiKeyModal">
+
+    <div class="modal-overlay" id="geminiKeyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
-            <h3 class="modal-title">配置 Gemini 模型</h3>
+            <h3 class="modal-title" id="modalTitle">配置 Gemini 模型</h3>
 
             <div class="modal-field">
                 <div class="modal-field-label">
@@ -890,7 +1549,7 @@
             <div class="modal-field">
                 <div class="modal-field-label">
                     <span><span class="required-star">*</span>模型 ID</span>
-                    <a class="modal-field-link" href="https://ai.google.dev/gemini-api/docs/models" target="_blank">前往 Google AI Studio 查询</a>
+                    <a class="modal-field-link" href="https://ai.google.dev/gemini-api-docs/models" target="_blank" aria-label="前往 Google AI Studio 查询模型 ID">前往 Google AI Studio 查询</a>
                 </div>
                 <input type="text" id="geminiModelIdInput" class="modal-input" placeholder="例如 gemini-1.5-flash 或 gemini-2.0-flash">
                 <div class="modal-input-error" id="modelIdError">必填</div>
@@ -900,7 +1559,7 @@
             <div class="modal-field">
                 <div class="modal-field-label">
                     <span><span class="required-star">*</span>API 密钥</span>
-                    <a class="modal-field-link" href="https://aistudio.google.com/app/apikey" target="_blank">获取 API 密钥</a>
+                    <a class="modal-field-link" href="https://aistudio.google.com/app/apikey" target="_blank" aria-label="获取 Gemini API 密钥">获取 API 密钥</a>
                 </div>
                 <input type="password" id="geminiKeyInput" class="modal-input" placeholder="输入你的 Gemini API 密钥">
                 <div class="modal-input-error" id="apiKeyError">必填</div>
@@ -918,24 +1577,69 @@
             <div class="modal-toast" id="modalToast"></div>
 
             <div class="modal-btns">
-                <button class="modal-btn modal-btn-clear" onclick="clearGeminiConfig()">清除配置</button>
-                <button class="modal-btn modal-btn-save" onclick="saveGeminiConfig()">保存配置</button>
+                <button class="modal-btn modal-btn-clear" onclick="clearGeminiConfig()" aria-label="清除配置">清除配置</button>
+                <button class="modal-btn modal-btn-save" onclick="saveGeminiConfig()" aria-label="保存配置">保存配置</button>
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
     <script src="daily_log.js"></script>
     <script>
-        let dailyLogData = [];
-        let signalRecords = [];
-        let reviewSummary = null;
-        let chartInstance = null;
-        let currentFilter = 'all';
-        let lastSuggestions = null;
-        let geminiFullResult = null;
-        let geminiParsedResult = null;
-        
+        var dailyLogData = [];
+        var signalRecords = [];
+        var reviewSummary = null;
+        var chartInstance = null;
+        var currentFilter = 'all';
+        var lastSuggestions = null;
+        var geminiFullResult = null;
+        var geminiParsedResult = null;
+
+        function getCSSVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        function showToast(message, type) {
+            type = type || 'info';
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + type;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(function() {
+                toast.classList.add('toast-out');
+                setTimeout(function() {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        function updateScrollShadows() {
+            document.querySelectorAll('.records-wrapper').forEach(function(wrapper) {
+                if (wrapper.scrollWidth > wrapper.clientWidth) {
+                    wrapper.classList.add('has-scroll');
+                } else {
+                    wrapper.classList.remove('has-scroll');
+                }
+            });
+        }
+
+        function setAccuracyColorClass(el, value) {
+            el.classList.remove('accuracy-color-default', 'accuracy-color-good', 'accuracy-color-medium', 'accuracy-color-bad');
+            if (value === '--' || value === 0) {
+                el.classList.add('accuracy-color-default');
+            } else {
+                var num = parseFloat(value);
+                if (num >= 65) {
+                    el.classList.add('accuracy-color-good');
+                } else if (num >= 50) {
+                    el.classList.add('accuracy-color-medium');
+                } else {
+                    el.classList.add('accuracy-color-bad');
+                }
+            }
+        }
+
         window.onload = function() {
             loadDailyLog();
             loadGeminiConfigFromStorage();
@@ -943,9 +1647,9 @@
         };
 
         function loadGeminiConfigFromStorage() {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            const savedModel = localStorage.getItem('gemini_model_id');
-            const savedBaseUrl = localStorage.getItem('gemini_base_url');
+            var savedKey = localStorage.getItem('gemini_api_key');
+            var savedModel = localStorage.getItem('gemini_model_id');
+            var savedBaseUrl = localStorage.getItem('gemini_base_url');
             if (savedKey) {
                 document.getElementById('geminiKeyInput').value = savedKey;
             }
@@ -956,15 +1660,17 @@
                 document.getElementById('geminiBaseUrlInput').value = savedBaseUrl;
             }
         }
-        
-        async function waitForFlaskReady(maxRetries = 10, interval = 1500) {
-            for (let i = 0; i < maxRetries; i++) {
+
+        async function waitForFlaskReady(maxRetries, interval) {
+            maxRetries = maxRetries || 10;
+            interval = interval || 1500;
+            for (var i = 0; i < maxRetries; i++) {
                 try {
-                    const baseUrl = await getApiBaseUrl();
-                    const res = await fetch(`${baseUrl}/api/review-data`, { signal: AbortSignal.timeout(3000) });
+                    var baseUrl = await getApiBaseUrl();
+                    var res = await fetch(baseUrl + '/api/review-data', { signal: AbortSignal.timeout(3000) });
                     if (res.ok) return baseUrl;
                 } catch (e) {}
-                await new Promise(r => setTimeout(r, interval));
+                await new Promise(function(r) { setTimeout(r, interval); });
             }
             return null;
         }
@@ -974,62 +1680,73 @@
                 dailyLogData = DAILY_LOG_DATA;
             }
             try {
-                const baseUrl = await waitForFlaskReady();
+                var baseUrl = await waitForFlaskReady();
                 if (baseUrl) {
-                    const res = await fetch(`${baseUrl}/api/review-data`);
-                    const data = await res.json();
+                    var res = await fetch(baseUrl + '/api/review-data');
+                    var data = await res.json();
                     reviewSummary = data.summary;
                     signalRecords = data.signal_records || [];
                 }
             } catch (e) {}
             updateDashboard();
         }
-        
+
         function updateDashboard() {
             if (!dailyLogData || !dailyLogData.length) {
                 return;
             }
 
+            var panel = document.getElementById('dashboardPanel');
+            if (panel) panel.classList.remove('loading');
+
             if (reviewSummary) {
                 setAccuracyValue('stat-5d', reviewSummary.accuracy_5d, reviewSummary.verified_count);
                 document.getElementById('stat-5d-sub').textContent = reviewSummary.accuracy_5d !== '--'
-                    ? `已验证 ${reviewSummary.verified_count} 条`
+                    ? '已验证 ' + reviewSummary.verified_count + ' 条'
                     : '暂无数据';
 
                 setAccuracyValue('stat-overall', reviewSummary.overall_accuracy, reviewSummary.verified_count);
                 document.getElementById('stat-overall-sub').textContent = reviewSummary.overall_accuracy !== '--'
-                    ? `基于 ${reviewSummary.verified_count + reviewSummary.verified_10d + reviewSummary.verified_20d} 条验证`
+                    ? '基于 ' + (reviewSummary.verified_count + reviewSummary.verified_10d + reviewSummary.verified_20d) + ' 条验证'
                     : '数据积累中';
 
                 setAccuracyValue('stat-signal', reviewSummary.signal_accuracy, reviewSummary.signal_verified);
                 if (reviewSummary.signal_accuracy !== '--') {
-                    document.getElementById('stat-signal-sub').textContent = `共${reviewSummary.signal_total}次信号 已验证${reviewSummary.signal_verified}次（${reviewSummary.signal_basis}）`;
+                    document.getElementById('stat-signal-sub').textContent = '共' + reviewSummary.signal_total + '次信号 已验证' + reviewSummary.signal_verified + '次（' + reviewSummary.signal_basis + '）';
                 } else {
                     document.getElementById('stat-signal-sub').textContent = '暂无有效信号';
                 }
             } else {
-                const verified = dailyLogData.filter(x => x.verify_5d && x.verify_5d.status === 'verified');
-                const correct = verified.filter(x => x.verify_5d.result === 'correct');
-                const overallAccuracy = verified.length >= 5 ? Math.round((correct.length / verified.length) * 100) : null;
+                var verified = dailyLogData.filter(function(x) { return x.verify_5d && x.verify_5d.status === 'verified'; });
+                var correct = verified.filter(function(x) { return x.verify_5d.result === 'correct'; });
+                var overallAccuracy = verified.length >= 5 ? Math.round((correct.length / verified.length) * 100) : null;
 
-                document.getElementById('stat-5d').textContent = '--';
+                var stat5dEl = document.getElementById('stat-5d');
+                stat5dEl.textContent = '--';
+                setAccuracyColorClass(stat5dEl, '--');
                 document.getElementById('stat-5d-sub').textContent = '暂无数据';
 
                 if (overallAccuracy !== null) {
-                    document.getElementById('stat-overall').textContent = overallAccuracy + '%';
-                    document.getElementById('stat-overall-sub').textContent = `基于 ${verified.length} 条验证`;
+                    var statOverallEl = document.getElementById('stat-overall');
+                    statOverallEl.textContent = overallAccuracy + '%';
+                    setAccuracyColorClass(statOverallEl, overallAccuracy + '%');
+                    document.getElementById('stat-overall-sub').textContent = '基于 ' + verified.length + ' 条验证';
                 } else {
-                    document.getElementById('stat-overall').textContent = '--';
-                    document.getElementById('stat-overall-sub').textContent = `数据积累中 (${verified.length}条)`;
+                    var statOverallEl2 = document.getElementById('stat-overall');
+                    statOverallEl2.textContent = '--';
+                    setAccuracyColorClass(statOverallEl2, '--');
+                    document.getElementById('stat-overall-sub').textContent = '数据积累中 (' + verified.length + '条)';
                 }
 
-                document.getElementById('stat-signal').textContent = '--';
+                var statSignalEl = document.getElementById('stat-signal');
+                statSignalEl.textContent = '--';
+                setAccuracyColorClass(statSignalEl, '--');
                 document.getElementById('stat-signal-sub').textContent = '暂无有效信号';
             }
 
-            const uniqueDates = [...new Set(dailyLogData.map(x => x.date))].sort();
+            var uniqueDates = [...new Set(dailyLogData.map(function(x) { return x.date; }))].sort();
             document.getElementById('stat-days').textContent = uniqueDates.length;
-            
+
             renderEmotionBars();
             renderIndicatorBars();
             renderRecordsTable();
@@ -1038,174 +1755,168 @@
             if (reviewSummary) {
                 setAccuracyValue('stat-10d', reviewSummary.accuracy_10d, reviewSummary.verified_10d);
                 document.getElementById('stat-10d-sub').textContent = reviewSummary.accuracy_10d !== '--'
-                    ? `已验证 ${reviewSummary.verified_10d} 条`
+                    ? '已验证 ' + reviewSummary.verified_10d + ' 条'
                     : '暂无数据';
                 setAccuracyValue('stat-20d', reviewSummary.accuracy_20d, reviewSummary.verified_20d);
                 document.getElementById('stat-20d-sub').textContent = reviewSummary.accuracy_20d !== '--'
-                    ? `已验证 ${reviewSummary.verified_20d} 条`
+                    ? '已验证 ' + reviewSummary.verified_20d + ' 条'
                     : '暂无数据';
             } else {
                 updateAccuracyCard('stat-10d', 'stat-10d-sub', dailyLogData, 'verify_10d');
                 updateAccuracyCard('stat-20d', 'stat-20d-sub', dailyLogData, 'verify_20d');
             }
+
+            updateScrollShadows();
         }
 
         function setAccuracyValue(elementId, accuracyStr, verifiedCount) {
-            const el = document.getElementById(elementId);
+            var el = document.getElementById(elementId);
             el.textContent = accuracyStr;
-            if (accuracyStr === '--' || verifiedCount === 0) {
-                el.style.color = '#111827';
-                return;
-            }
-            const val = parseFloat(accuracyStr);
-            if (val >= 65) {
-                el.style.color = '#059669';
-            } else if (val >= 50) {
-                el.style.color = '#D97706';
-            } else {
-                el.style.color = '#DC2626';
-            }
+            el.classList.remove('skeleton');
+            setAccuracyColorClass(el, accuracyStr === '--' || verifiedCount === 0 ? '--' : accuracyStr);
         }
 
         function updateAccuracyCard(valueId, subId, data, fieldName) {
-            const verified = data.filter(x => x[fieldName] && x[fieldName].status === 'verified');
-            const correct = verified.filter(x => x[fieldName].result === 'correct');
-            const acc = verified.length > 0 ? parseFloat((correct.length / verified.length * 100).toFixed(1)) : null;
-            const valueEl = document.getElementById(valueId);
-            const subEl = document.getElementById(subId);
-
+            var verified = data.filter(function(x) { return x[fieldName] && x[fieldName].status === 'verified'; });
+            var correct = verified.filter(function(x) { return x[fieldName].result === 'correct'; });
+            var acc = verified.length > 0 ? parseFloat((correct.length / verified.length * 100).toFixed(1)) : null;
+            var valueEl = document.getElementById(valueId);
+            var subEl = document.getElementById(subId);
+            valueEl.classList.remove('skeleton');
+            subEl.classList.remove('skeleton');
             if (acc !== null) {
                 valueEl.textContent = acc + '%';
-                subEl.textContent = `已验证 ${verified.length} 条`;
-                if (acc >= 65) {
-                    valueEl.style.color = '#059669';
-                } else if (acc >= 50) {
-                    valueEl.style.color = '#D97706';
-                } else {
-                    valueEl.style.color = '#DC2626';
-                }
+                subEl.textContent = '已验证 ' + verified.length + ' 条';
+                setAccuracyColorClass(valueEl, acc + '%');
             } else {
                 valueEl.textContent = '--';
-                valueEl.style.color = '#111827';
+                setAccuracyColorClass(valueEl, '--');
                 subEl.textContent = '暂无数据';
             }
         }
-        
+
         function renderEmotionBars() {
-            const emotions = ['极度恐慌', '恐慌', '中性', '贪婪', '极度贪婪'];
-            const emotionContainer = document.getElementById('emotion-bars');
-            const emotionStats = {};
-            emotions.forEach(emotion => emotionStats[emotion] = { total: 0, correct: 0 });
-            
-            dailyLogData.forEach(entry => {
-                const emotion = entry.signal?.emotion;
+            var emotions = ['极度恐慌', '恐慌', '中性', '贪婪', '极度贪婪'];
+            var emotionContainer = document.getElementById('emotion-bars');
+            var emotionStats = {};
+            emotions.forEach(function(emotion) { emotionStats[emotion] = { total: 0, correct: 0 }; });
+
+            dailyLogData.forEach(function(entry) {
+                var emotion = entry.signal ? entry.signal.emotion : null;
                 if (!emotion) return;
                 if (!emotionStats[emotion]) emotionStats[emotion] = { total: 0, correct: 0 };
                 emotionStats[emotion].total++;
-                if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                if (entry.verify_5d && entry.verify_5d.status === 'verified' && entry.verify_5d.result === 'correct') {
                     emotionStats[emotion].correct++;
                 }
             });
-            
-            let html = '';
-            emotions.forEach(emotion => {
-                const stats = emotionStats[emotion];
-                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+
+            var html = '';
+            emotions.forEach(function(emotion) {
+                var stats = emotionStats[emotion];
+                var rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
                 if (stats.total === 0) {
-                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                    html += '<div class="bar-row"><div class="bar-label">' + emotion + '</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>';
                 } else {
-                    html += `<div class="bar-row"><div class="bar-label">${emotion}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                    html += '<div class="bar-row"><div class="bar-label">' + emotion + '</div><div class="bar-wrapper"><div class="bar-fill" style="width:' + Math.max(rate, 5) + '%"></div></div><div class="bar-value">' + rate + '% (' + stats.total + '次)</div></div>';
                 }
             });
             emotionContainer.innerHTML = html;
             document.getElementById('emotion-bottom-note').textContent = '各情绪级别命中率统计';
         }
-        
+
         function renderIndicatorBars() {
-            const indicators = ['VIX恐慌指数', '高收益债信用利差', 'NDX高于MA200广度', 'QQQ PCR偏离', 'NDX偏离MA200', 'VIX期限结构'];
-            const indicatorContainer = document.getElementById('indicator-bars');
-            const indicatorStats = {};
-            indicators.forEach(ind => indicatorStats[ind] = { total: 0, correct: 0 });
-            
-            dailyLogData.forEach(entry => {
-                const conditions = entry.signal?.triggered_conditions || [];
-                conditions.forEach(cond => {
-                    indicators.forEach(ind => {
+            var indicators = ['VIX恐慌指数', '高收益债信用利差', 'NDX高于MA200广度', 'QQQ PCR偏离', 'NDX偏离MA200', 'VIX期限结构'];
+            var indicatorContainer = document.getElementById('indicator-bars');
+            var indicatorStats = {};
+            indicators.forEach(function(ind) { indicatorStats[ind] = { total: 0, correct: 0 }; });
+
+            dailyLogData.forEach(function(entry) {
+                var conditions = entry.signal ? entry.signal.triggered_conditions : [];
+                if (!conditions) return;
+                conditions.forEach(function(cond) {
+                    indicators.forEach(function(ind) {
                         if (cond.includes(ind) || cond.includes(ind.slice(0,4))) {
                             indicatorStats[ind].total++;
-                            if (entry.verify_5d?.status === 'verified' && entry.verify_5d.result === 'correct') {
+                            if (entry.verify_5d && entry.verify_5d.status === 'verified' && entry.verify_5d.result === 'correct') {
                                 indicatorStats[ind].correct++;
                             }
                         }
                     });
                 });
             });
-            
-            let html = '';
-            let bestInd = null;
-            let bestRate = 0;
-            
-            indicators.forEach(ind => {
-                const stats = indicatorStats[ind];
-                const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+
+            var html = '';
+            var bestInd = null;
+            var bestRate = 0;
+
+            indicators.forEach(function(ind) {
+                var stats = indicatorStats[ind];
+                var rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
                 if (stats.total >= 2 && rate > bestRate) {
                     bestRate = rate;
                     bestInd = ind;
                 }
-                
+
                 if (stats.total === 0) {
-                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>`;
+                    html += '<div class="bar-row"><div class="bar-label">' + ind + '</div><div class="bar-wrapper"></div><div class="bar-value">-- (0次)</div></div>';
                 } else {
-                    html += `<div class="bar-row"><div class="bar-label">${ind}</div><div class="bar-wrapper"><div class="bar-fill" style="width:${Math.max(rate, 5)}%"></div></div><div class="bar-value">${rate}% (${stats.total}次)</div></div>`;
+                    html += '<div class="bar-row"><div class="bar-label">' + ind + '</div><div class="bar-wrapper"><div class="bar-fill" style="width:' + Math.max(rate, 5) + '%"></div></div><div class="bar-value">' + rate + '% (' + stats.total + '次)</div></div>';
                 }
             });
             indicatorContainer.innerHTML = html;
-            const note = bestInd ? `最可靠指标：${bestInd} (${bestRate}% 命中率)` : '暂无足够数据';
+            var note = bestInd ? '最可靠指标：' + bestInd + ' (' + bestRate + '% 命中率)' : '暂无足够数据';
             document.getElementById('indicator-bottom-note').textContent = note;
         }
-        
+
         function renderAccuracyChart() {
-            const ctx = document.getElementById('accuracyChart').getContext('2d');
-            
+            var ctx = document.getElementById('accuracyChart').getContext('2d');
+
             if (chartInstance) {
                 chartInstance.destroy();
             }
-            
-            const verified = dailyLogData
-                .filter(x => x.verify_5d && x.verify_5d.status === 'verified')
-                .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-            
+
+            var verified = dailyLogData
+                .filter(function(x) { return x.verify_5d && x.verify_5d.status === 'verified'; })
+                .sort(function(a, b) { return (a.date || '').localeCompare(b.date || ''); });
+
             if (verified.length < 7) {
-                document.getElementById('accuracyChart').style.display = 'none';
-                const container = document.getElementById('accuracyChart').parentElement;
-                let placeholder = container.querySelector('.chart-placeholder-msg');
+                document.getElementById('accuracyChart').classList.add('hidden');
+                var container = document.getElementById('accuracyChart').parentElement;
+                var chartSkeleton = document.getElementById('chartSkeleton');
+                if (chartSkeleton) chartSkeleton.classList.add('hidden');
+                var placeholder = container.querySelector('.chart-placeholder-msg');
                 if (!placeholder) {
                     placeholder = document.createElement('div');
                     placeholder.className = 'chart-placeholder-msg';
                     container.appendChild(placeholder);
                 }
-                placeholder.textContent = `数据积累中，至少需要7条已验证记录（当前${verified.length}条）`;
+                placeholder.textContent = '数据积累中，至少需要7条已验证记录（当前' + verified.length + '条）';
                 return;
             }
-            
-            const placeholder = document.querySelector('.chart-placeholder-msg');
+
+            var placeholder = document.querySelector('.chart-placeholder-msg');
             if (placeholder) placeholder.remove();
-            document.getElementById('accuracyChart').style.display = '';
-            
-            const labels = [];
-            const rollingAcc = [];
-            
-            for (let i = 0; i < verified.length; i++) {
+            var chartSkeleton = document.getElementById('chartSkeleton');
+            if (chartSkeleton) chartSkeleton.classList.add('hidden');
+            document.getElementById('accuracyChart').classList.remove('hidden');
+
+            var labels = [];
+            var rollingAcc = [];
+
+            for (var i = 0; i < verified.length; i++) {
                 labels.push(verified[i].date || '');
-                let correct = 0;
-                let count = 0;
-                for (let j = i; j >= 0 && count < 7; j--) {
+                var correctCount = 0;
+                var count = 0;
+                for (var j = i; j >= 0 && count < 7; j--) {
                     count++;
-                    if (verified[j].verify_5d.result === 'correct') correct++;
+                    if (verified[j].verify_5d.result === 'correct') correctCount++;
                 }
-                rollingAcc.push(count >= 7 ? Math.round((correct / count) * 100) : null);
+                rollingAcc.push(count >= 7 ? Math.round((correctCount / count) * 100) : null);
             }
-            
+
+            var gridColor = getCSSVar('--chart-grid-color') || 'rgba(0,0,0,0.08)';
+
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1225,7 +1936,7 @@
                         },
                         {
                             label: '50%基准线',
-                            data: labels.map(() => 50),
+                            data: labels.map(function() { return 50; }),
                             borderColor: '#DC2626',
                             borderWidth: 1.5,
                             borderDash: [6, 4],
@@ -1253,10 +1964,10 @@
                             max: 100,
                             ticks: {
                                 stepSize: 20,
-                                callback: v => v + '%'
+                                callback: function(v) { return v + '%'; }
                             },
                             grid: {
-                                color: 'rgba(0,0,0,0.08)'
+                                color: gridColor
                             }
                         },
                         x: {
@@ -1272,9 +1983,9 @@
                 }
             });
         }
-        
+
         function emotionClass(sentiment) {
-            const map = {
+            var map = {
                 '中性': 'emotion-neutral',
                 '恐慌': 'emotion-panic',
                 '极度恐慌': 'emotion-extreme-panic',
@@ -1286,7 +1997,7 @@
 
         function formatReturn(val) {
             if (!val || val === '--' || val === '') return { text: '--', cls: 'return-placeholder' };
-            const s = String(val);
+            var s = String(val);
             if (s.startsWith('+') || parseFloat(s) > 0) return { text: s, cls: 'return-positive' };
             if (s.startsWith('-') || parseFloat(s) < 0) return { text: s, cls: 'return-negative' };
             return { text: s, cls: 'return-placeholder' };
@@ -1301,26 +2012,27 @@
 
         function renderAccuracyCell(value) {
             if (!value || value === '--' || value === '') return '<span class="return-placeholder">--</span>';
-            const num = parseFloat(value);
+            var num = parseFloat(value);
             if (isNaN(num)) return value;
-            if (num >= 65) return `<span class="accuracy-good">${value}</span>`;
-            if (num >= 50) return `<span class="accuracy-medium">${value}</span>`;
-            return `<span class="accuracy-bad">${value}</span>`;
+            if (num >= 65) return '<span class="accuracy-good">' + value + '</span>';
+            if (num >= 50) return '<span class="accuracy-medium">' + value + '</span>';
+            return '<span class="accuracy-bad">' + value + '</span>';
         }
 
         function renderRecordsTable() {
-            const tbody = document.getElementById('records-tbody');
+            var tbody = document.getElementById('records-tbody');
             if (!signalRecords || !signalRecords.length) {
-                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" class="td-center-muted">暂无数据</td></tr>';
+                updateScrollShadows();
                 return;
             }
-            const records = signalRecords;
+            var records = signalRecords;
 
-            const filtered = records.filter(row => {
-                const sentiment = row.sentiment || '';
-                const v5 = row.verified_5d || '';
-                const v10 = row.verified_10d || '';
-                const v20 = row.verified_20d || '';
+            var filtered = records.filter(function(row) {
+                var sentiment = row.sentiment || '';
+                var v5 = row.verified_5d || '';
+                var v10 = row.verified_10d || '';
+                var v20 = row.verified_20d || '';
                 if (currentFilter === 'all') return true;
                 if (currentFilter === 'signal') return sentiment !== '中性';
                 if (currentFilter === 'wrong') return v5 === '误判' || v10 === '误判' || v20 === '误判';
@@ -1328,47 +2040,56 @@
                 return true;
             });
 
-            let html = '';
-            filtered.forEach(row => {
-                const sentiment = row.sentiment || '';
-                const eCls = emotionClass(sentiment);
-                const ndx5 = formatReturn(row.ndx_5d);
-                const spx5 = formatReturn(row.spx_5d);
-                const ndx10 = formatReturn(row.ndx_10d);
-                const spx10 = formatReturn(row.spx_10d);
-                const ndx20 = formatReturn(row.ndx_20d);
-                const spx20 = formatReturn(row.spx_20d);
-                html += `<tr>
-                    <td class="col-date">${row.date || ''}</td>
-                    <td class="col-sentiment"><span class="${eCls}">${sentiment || '--'}</span></td>
-                    <td class="${ndx5.cls}">${ndx5.text}</td>
-                    <td class="${spx5.cls}">${spx5.text}</td>
-                    <td class="${ndx10.cls}">${ndx10.text}</td>
-                    <td class="${spx10.cls}">${spx10.text}</td>
-                    <td class="${ndx20.cls}">${ndx20.text}</td>
-                    <td class="${spx20.cls}">${spx20.text}</td>
-                    <td>${renderVerifyCell(row.verified_5d)}</td>
-                    <td>${renderVerifyCell(row.verified_10d)}</td>
-                    <td>${renderVerifyCell(row.verified_20d)}</td>
-                    <td>${renderAccuracyCell(row.accuracy)}</td>
-                </tr>`;
+            var html = '';
+            filtered.forEach(function(row) {
+                var sentiment = row.sentiment || '';
+                var eCls = emotionClass(sentiment);
+                var ndx5 = formatReturn(row.ndx_5d);
+                var spx5 = formatReturn(row.spx_5d);
+                var ndx10 = formatReturn(row.ndx_10d);
+                var spx10 = formatReturn(row.spx_10d);
+                var ndx20 = formatReturn(row.ndx_20d);
+                var spx20 = formatReturn(row.spx_20d);
+                html += '<tr>' +
+                    '<td class="col-date">' + (row.date || '') + '</td>' +
+                    '<td class="col-sentiment"><span class="' + eCls + '">' + (sentiment || '--') + '</span></td>' +
+                    '<td class="' + ndx5.cls + '">' + ndx5.text + '</td>' +
+                    '<td class="' + spx5.cls + '">' + spx5.text + '</td>' +
+                    '<td class="' + ndx10.cls + '">' + ndx10.text + '</td>' +
+                    '<td class="' + spx10.cls + '">' + spx10.text + '</td>' +
+                    '<td class="' + ndx20.cls + '">' + ndx20.text + '</td>' +
+                    '<td class="' + spx20.cls + '">' + spx20.text + '</td>' +
+                    '<td>' + renderVerifyCell(row.verified_5d) + '</td>' +
+                    '<td>' + renderVerifyCell(row.verified_10d) + '</td>' +
+                    '<td>' + renderVerifyCell(row.verified_20d) + '</td>' +
+                    '<td>' + renderAccuracyCell(row.accuracy) + '</td>' +
+                    '</tr>';
             });
-            tbody.innerHTML = html || '<tr><td colspan="12" style="text-align:center;color:#9CA3AF">暂无数据</td></tr>';
+            tbody.innerHTML = html || '<tr><td colspan="12" class="td-center-muted">暂无数据</td></tr>';
+            updateScrollShadows();
         }
-        
-        document.querySelectorAll('.filter-btn').forEach(btn => {
+
+        document.querySelectorAll('.filter-btn').forEach(function(btn) {
             btn.onclick = function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.filter-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
                 this.classList.add('active');
+                this.setAttribute('aria-pressed', 'true');
                 currentFilter = this.dataset.filter;
                 renderRecordsTable();
             };
         });
-        
+
+        window.addEventListener('resize', function() {
+            updateScrollShadows();
+        });
+
         async function getApiBaseUrl() {
             if (window.electronAPI && window.electronAPI.getServerUrl) {
                 try {
-                    const url = await window.electronAPI.getServerUrl();
+                    var url = await window.electronAPI.getServerUrl();
                     if (url) return url;
                 } catch (e) {}
             }
@@ -1379,12 +2100,12 @@
         }
 
         async function requestGeminiSuggestions() {
-            const btn = document.getElementById('geminiBtn');
-            const apiKey = localStorage.getItem('gemini_api_key');
-            const baseUrl = await getApiBaseUrl();
+            var btn = document.getElementById('geminiBtn');
+            var apiKey = localStorage.getItem('gemini_api_key');
+            var baseUrl = await getApiBaseUrl();
 
             if (!apiKey) {
-                alert('请先点击右侧齿轮图标⚙配置 Gemini API Key');
+                showToast('请先点击右侧齿轮图标⚙配置 Gemini API Key', 'error');
                 showGeminiSettings();
                 return;
             }
@@ -1393,14 +2114,14 @@
             btn.textContent = '正在读取数据...';
 
             try {
-                const reviewRes = await fetch(`${baseUrl}/api/review-data`);
-                const reviewData = await reviewRes.json();
+                var reviewRes = await fetch(baseUrl + '/api/review-data');
+                var reviewData = await reviewRes.json();
 
-                const prompt = buildGeminiPrompt(reviewData);
+                var prompt = buildGeminiPrompt(reviewData);
 
                 btn.textContent = '正在询问 Gemini...';
 
-                const geminiRes = await fetch(`${baseUrl}/api/call-gemini`, {
+                var geminiRes = await fetch(baseUrl + '/api/call-gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1410,7 +2131,7 @@
                         prompt: prompt
                     })
                 });
-                const geminiData = await geminiRes.json();
+                var geminiData = await geminiRes.json();
 
                 if (geminiData.error) {
                     showGeminiError(geminiData.error);
@@ -1428,111 +2149,58 @@
         }
 
         function buildGeminiPrompt(reviewData) {
-            const strategyText = reviewData.strategy_text || '';
-            const summary = reviewData.summary || {};
-            const signalRecords = reviewData.signal_records || [];
-            const emotionHitrates = reviewData.emotion_hitrates || {};
-            const indicatorContributions = reviewData.indicator_contributions || [];
+            var strategyText = reviewData.strategy_text || '';
+            var summary = reviewData.summary || {};
+            var signalRecordsData = reviewData.signal_records || [];
+            var emotionHitrates = reviewData.emotion_hitrates || {};
+            var indicatorContributions = reviewData.indicator_contributions || [];
 
-            let signalRecordsText = '';
-            signalRecords.forEach(r => {
-                signalRecordsText += `${r.date || '--'} | ${r.sentiment || '--'} | NDX5:${r.ndx_5d || '--'} SPX5:${r.spx_5d || '--'} | NDX10:${r.ndx_10d || '--'} SPX10:${r.spx_10d || '--'} | NDX20:${r.ndx_20d || '--'} SPX20:${r.spx_20d || '--'} | v5:${r.verified_5d || '--'} v10:${r.verified_10d || '--'} v20:${r.verified_20d || '--'} | 综合:${r.accuracy || '--'}\n`;
+            var signalRecordsText = '';
+            signalRecordsData.forEach(function(r) {
+                signalRecordsText += (r.date || '--') + ' | ' + (r.sentiment || '--') + ' | NDX5:' + (r.ndx_5d || '--') + ' SPX5:' + (r.spx_5d || '--') + ' | NDX10:' + (r.ndx_10d || '--') + ' SPX10:' + (r.spx_10d || '--') + ' | NDX20:' + (r.ndx_20d || '--') + ' SPX20:' + (r.spx_20d || '--') + ' | v5:' + (r.verified_5d || '--') + ' v10:' + (r.verified_10d || '--') + ' v20:' + (r.verified_20d || '--') + ' | 综合:' + (r.accuracy || '--') + '\n';
             });
 
-            let emotionHitratesText = '';
-            Object.entries(emotionHitrates).forEach(([emotion, data]) => {
-                const r5 = data.verified_5d > 0 ? (data.correct_5d / data.verified_5d * 100).toFixed(1) + '%' : '--';
-                const r10 = data.verified_10d > 0 ? (data.correct_10d / data.verified_10d * 100).toFixed(1) + '%' : '--';
-                const r20 = data.verified_20d > 0 ? (data.correct_20d / data.verified_20d * 100).toFixed(1) + '%' : '--';
-                emotionHitratesText += `${emotion}: 共${data.total}条 | 5日命中:${r5}(${data.correct_5d}/${data.verified_5d}) | 10日命中:${r10}(${data.correct_10d}/${data.verified_10d}) | 20日命中:${r20}(${data.correct_20d}/${data.verified_20d})\n`;
+            var emotionHitratesText = '';
+            Object.entries(emotionHitrates).forEach(function(entry) {
+                var emotion = entry[0];
+                var data = entry[1];
+                var r5 = data.verified_5d > 0 ? (data.correct_5d / data.verified_5d * 100).toFixed(1) + '%' : '--';
+                var r10 = data.verified_10d > 0 ? (data.correct_10d / data.verified_10d * 100).toFixed(1) + '%' : '--';
+                var r20 = data.verified_20d > 0 ? (data.correct_20d / data.verified_20d * 100).toFixed(1) + '%' : '--';
+                emotionHitratesText += emotion + ': 共' + data.total + '条 | 5日命中:' + r5 + '(' + data.correct_5d + '/' + data.verified_5d + ') | 10日命中:' + r10 + '(' + data.correct_10d + '/' + data.verified_10d + ') | 20日命中:' + r20 + '(' + data.correct_20d + '/' + data.verified_20d + ')\n';
             });
 
-            let indicatorContribText = '';
-            indicatorContributions.forEach(ind => {
-                indicatorContribText += `${ind.label}(${ind.key}): 均值=${ind.avg != null ? ind.avg : '--'} 范围=[${ind.min != null ? ind.min : '--'}, ${ind.max != null ? ind.max : '--'}] 样本=${ind.sample_count} 触发=${ind.triggered_count}\n`;
+            var indicatorContribText = '';
+            indicatorContributions.forEach(function(ind) {
+                indicatorContribText += ind.label + '(' + ind.key + '): 均值=' + (ind.avg != null ? ind.avg : '--') + ' 范围=[' + (ind.min != null ? ind.min : '--') + ', ' + (ind.max != null ? ind.max : '--') + '] 样本=' + ind.sample_count + ' 触发=' + ind.triggered_count + '\n';
             });
 
-            const prompt = `你是一位专业的量化策略分析师，请根据以下信息分析我的美股情绪监测模型的运行情况，
-找出误判规律，并给出具体可操作的参数优化建议。
-
-【一、当前策略规则】
-${strategyText}
-
-【二、实时准确率看板（累计数据）】
-- 5日准确率：${summary.accuracy_5d}（已验证${summary.verified_count}条，正确${summary.correct_count}条）
-- 10日准确率：${summary.accuracy_10d}（已验证${summary.verified_10d}条，正确${summary.correct_10d}条）
-- 20日准确率：${summary.accuracy_20d}（已验证${summary.verified_20d}条，正确${summary.correct_20d}条）
-- 综合准确率：${summary.overall_accuracy}
-- 多空信号准确率：${summary.signal_accuracy}（仅统计恐慌/贪婪信号，共${summary.signal_total}条有效信号，已验${summary.signal_verified}条，${summary.signal_basis}）
-- 待验证信号：${summary.pending_count}条
-
-【三、最近信号记录（来自daily_log.csv，最多30条，日期升序）】
-${signalRecordsText || '暂无数据'}
-
-【四、各情绪级别命中率】
-${emotionHitratesText || '暂无数据'}
-
-【五、各指标触发贡献度（来自daily_log.json市场数据汇总）】
-${indicatorContribText || '暂无数据'}
-
-请从以下角度给出优化建议：
-            1. 分析各情绪级别的命中率差异，哪些情绪区间的预测最不准，原因可能是什么
-            2. 对比5日/10日/20日准确率的变化趋势，判断模型是短期预测更强还是长期更稳定
-            3. 根据各指标的当前数值区间和触发频率，判断哪些阈值需要收紧或放宽
-            4. 找出各指标之间可能存在冲突或冗余的地方
-            5. 基于以上分析，给出最优先改进的一条具体建议（带具体数值）
-
-            【核心规则：数据驱动分析】
-            - 你只能基于上面提供的实时准确率数据来做分析，严禁脱离数据进行主观推测
-            - 如果某个情绪级别、某个周期的验证数据为0或"--"，不能对该项给出优化建议，只能建议继续监测积累数据
-            - 如果所有准确率数据都显示"--"（无已验证数据），必须输出【结论：维持现有策略】，并说明数据不足需要继续积累
-            - 给出的任何参数优化建议，必须对应到当前策略文件中实际存在的参数和阈值
-            - 如果没有充分的数据支撑优化决策，不要强行输出优化策略
-
-  【严格要求输出格式——必须按顺序输出以下三部分】
-  
-  第一部分（第一行）：结论，必须为以下两种之一：
-  - 【结论：维持现有策略】
-  - 【结论：优化策略】
-
-  第二部分：分析正文（可自由发挥）
-
-  第三部分（最后一行）：复盘摘要，必须严格遵循以下格式：
-  【复盘摘要：XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX】
-  - 必须是整个回复的最后一行
-  - XXX 部分不超过30个汉字
-  - 只写核心结论和决策理由，不要写分析过程
-  - 示例：【复盘摘要：数据不足，仅1条5日验证，继续积累】
-  - 示例：【复盘摘要：5日准确率偏低，VIX阈值从25调至28】
-
-  如果是【结论：优化策略】，还必须在正文中以完整的 Python 代码形式输出优化后的策略文件，代码包裹在 \`\`\`python 和 \`\`\` 之间。
-
-  请用中文回复。`;
+            var prompt = '你是一位专业的量化策略分析师，请根据以下信息分析我的美股情绪监测模型的运行情况，\n找出误判规律，并给出具体可操作的参数优化建议。\n\n【一、当前策略规则】\n' + strategyText + '\n\n【二、实时准确率看板（累计数据）】\n- 5日准确率：' + summary.accuracy_5d + '（已验证' + summary.verified_count + '条，正确' + summary.correct_count + '条）\n- 10日准确率：' + summary.accuracy_10d + '（已验证' + summary.verified_10d + '条，正确' + summary.correct_10d + '条）\n- 20日准确率：' + summary.accuracy_20d + '（已验证' + summary.verified_20d + '条，正确' + summary.correct_20d + '条）\n- 综合准确率：' + summary.overall_accuracy + '\n- 多空信号准确率：' + summary.signal_accuracy + '（仅统计恐慌/贪婪信号，共' + summary.signal_total + '条有效信号，已验' + summary.signal_verified + '条，' + summary.signal_basis + '）\n- 待验证信号：' + summary.pending_count + '条\n\n【三、最近信号记录（来自daily_log.csv，最多30条，日期升序）】\n' + (signalRecordsText || '暂无数据') + '\n\n【四、各情绪级别命中率】\n' + (emotionHitratesText || '暂无数据') + '\n\n【五、各指标触发贡献度（来自daily_log.json市场数据汇总）】\n' + (indicatorContribText || '暂无数据') + '\n\n请从以下角度给出优化建议：\n            1. 分析各情绪级别的命中率差异，哪些情绪区间的预测最不准，原因可能是什么\n            2. 对比5日/10日/20日准确率的变化趋势，判断模型是短期预测更强还是长期更稳定\n            3. 根据各指标的当前数值区间和触发频率，判断哪些阈值需要收紧或放宽\n            4. 找出各指标之间可能存在冲突或冗余的地方\n            5. 基于以上分析，给出最优先改进的一条具体建议（带具体数值）\n\n            【核心规则：数据驱动分析】\n            - 你只能基于上面提供的实时准确率数据来做分析，严禁脱离数据进行主观推测\n            - 如果某个情绪级别、某个周期的验证数据为0或"--"，不能对该项给出优化建议，只能建议继续监测积累数据\n            - 如果所有准确率数据都显示"--"（无已验证数据），必须输出【结论：维持现有策略】，并说明数据不足需要继续积累\n            - 给出的任何参数优化建议，必须对应到当前策略文件中实际存在的参数和阈值\n            - 如果没有充分的数据支撑优化决策，不要强行输出优化策略\n\n  【严格要求输出格式——必须按顺序输出以下三部分】\n  \n  第一部分（第一行）：结论，必须为以下两种之一：\n  - 【结论：维持现有策略】\n  - 【结论：优化策略】\n\n  第二部分：分析正文（可自由发挥）\n\n  第三部分（最后一行）：复盘摘要，必须严格遵循以下格式：\n  【复盘摘要：XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX】\n  - 必须是整个回复的最后一行\n  - XXX 部分不超过30个汉字\n  - 只写核心结论和决策理由，不要写分析过程\n  - 示例：【复盘摘要：数据不足，仅1条5日验证，继续积累】\n  - 示例：【复盘摘要：5日准确率偏低，VIX阈值从25调至28】\n\n  如果是【结论：优化策略】，还必须在正文中以完整的 Python 代码形式输出优化后的策略文件，代码包裹在 ```python 和 ``` 之间。\n\n  请用中文回复。';
             return prompt;
         }
 
         function renderMarkdown(text) {
-            let html = text
+            var html = text
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
 
-            html = html.replace(/^### (.*$)/gm, '<h3 style="font-size:16px;font-weight:700;margin:16px 0 8px;color:#111827;">$1</h3>');
-            html = html.replace(/^## (.*$)/gm, '<h2 style="font-size:18px;font-weight:700;margin:18px 0 10px;color:#111827;">$1</h2>');
-            html = html.replace(/^# (.*$)/gm, '<h1 style="font-size:20px;font-weight:800;margin:20px 0 10px;color:#111827;">$1</h1>');
+            html = html.replace(/^### (.*$)/gm, '<h3 class="md-h3">$1</h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2 class="md-h2">$1</h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1 class="md-h1">$1</h1>');
 
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-            html = html.replace(/^- (.*$)/gm, '<li style="margin-bottom:6px;">$1</li>');
-            html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:8px 0;">$&</ul>');
+            html = html.replace(/^- (.*$)/gm, '<li class="md-li">$1</li>');
+            html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul class="md-ul">$&</ul>');
 
-            html = html.replace(/^(\d+)\. (.*$)/gm, '<li style="margin-bottom:6px;" value="$1">$2</li>');
-            html = html.replace(/(<li[^>]*value=.*<\/li>\n?)+/g, '<ol style="padding-left:20px;margin:8px 0;">$&</ol>');
+            html = html.replace(/^(\d+)\. (.*$)/gm, '<li class="md-li" value="$1">$2</li>');
+            html = html.replace(/(<li[^>]*value=.*<\/li>\n?)+/g, '<ol class="md-ol">$&</ol>');
 
-            html = html.replace(/`([^`]+)`/g, '<code style="background:#F3F4F6;padding:2px 6px;border-radius:4px;font-size:13px;">$1</code>');
+            html = html.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
 
-            html = html.replace(/\n\n/g, '</p><p style="margin:8px 0;">');
-            html = '<p style="margin:8px 0;">' + html + '</p>';
+            html = html.replace(/\n\n/g, '</p><p class="md-p">');
+            html = '<p class="md-p">' + html + '</p>';
 
             html = html.replace(/<p[^>]*><\/p>/g, '');
 
@@ -1540,44 +2208,44 @@ ${indicatorContribText || '暂无数据'}
         }
 
         function parseGeminiResult(text) {
-            const isOptimize = text.includes('【结论：优化策略】');
-            const isMaintain = text.includes('【结论：维持现有策略】');
-            let strategyCode = '';
-            let summary = '';
+            var isOptimize = text.includes('【结论：优化策略】');
+            var isMaintain = text.includes('【结论：维持现有策略】');
+            var strategyCode = '';
+            var summary = '';
 
             if (isOptimize) {
-                const codeMatch = text.match(/```python\s*([\s\S]*?)```/);
+                var codeMatch = text.match(/```python\s*([\s\S]*?)```/);
                 if (codeMatch) {
                     strategyCode = codeMatch[1].trim();
                 }
             }
 
-            const lines = text.split('\n');
-            const summaryMatch = text.match(/【复盘摘要[：:]\s*(.*?)】/);
+            var lines = text.split('\n');
+            var summaryMatch = text.match(/【复盘摘要[：:]\s*(.*?)】/);
             if (summaryMatch) {
                 summary = summaryMatch[1].trim().substring(0, 60);
             }
             if (!summary) {
-                const fallbackMatch = text.match(/复盘摘要[：:]\s*(.+)/);
+                var fallbackMatch = text.match(/复盘摘要[：:]\s*(.+)/);
                 if (fallbackMatch) {
                     summary = fallbackMatch[1].trim().substring(0, 60);
                 }
             }
             if (!summary) summary = isOptimize ? '优化策略参数' : '数据积累中，维持现有策略';
 
-            return { isOptimize, strategyCode, summary };
+            return { isOptimize: isOptimize, strategyCode: strategyCode, summary: summary };
         }
 
         function showGeminiResult(text) {
-            const panel = document.getElementById('suggestionsPanel');
-            const errorArea = document.getElementById('geminiErrorArea');
-            const content = document.getElementById('geminiResultContent');
-            const actions = document.getElementById('geminiResultActions');
+            var panel = document.getElementById('suggestionsPanel');
+            var errorArea = document.getElementById('geminiErrorArea');
+            var content = document.getElementById('geminiResultContent');
+            var actions = document.getElementById('geminiResultActions');
 
             errorArea.innerHTML = '';
 
             geminiParsedResult = parseGeminiResult(text);
-            let displayText = text;
+            var displayText = text;
 
             if (geminiParsedResult.isOptimize && geminiParsedResult.strategyCode) {
                 displayText = displayText.replace(/```python[\s\S]*?```/, '*[策略代码省略，可点击下方按钮采纳]*');
@@ -1586,57 +2254,54 @@ ${indicatorContribText || '暂无数据'}
             content.innerHTML = renderMarkdown(displayText);
 
             if (actions) {
-                actions.innerHTML = `
-                    <button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()">复制全文</button>
-                    <button class="btn-adopt" id="btnAdoptStrategy" onclick="adoptStrategy()">采纳</button>
-                    <button class="btn-reject" id="btnRejectStrategy" onclick="rejectStrategy()">不采纳</button>
-                    <button class="btn btn-secondary" onclick="closeSuggestions()">关闭</button>
-                `;
+                actions.innerHTML = '<button class="btn-copy" id="btnCopyResult" onclick="copyGeminiResult()" aria-label="复制分析结果">复制全文</button>' +
+                    '<button class="btn-adopt" id="btnAdoptStrategy" onclick="adoptStrategy()" aria-label="采纳优化建议">采纳</button>' +
+                    '<button class="btn-reject" id="btnRejectStrategy" onclick="rejectStrategy()" aria-label="不采纳优化建议">不采纳</button>' +
+                    '<button class="btn btn-secondary" onclick="closeSuggestions()" aria-label="关闭建议面板">关闭</button>';
             }
 
             panel.classList.add('active');
 
-            setTimeout(() => {
+            setTimeout(function() {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         }
 
         function showGeminiError(errorMsg) {
-            const panel = document.getElementById('suggestionsPanel');
-            const errorArea = document.getElementById('geminiErrorArea');
-            const content = document.getElementById('geminiResultContent');
+            var panel = document.getElementById('suggestionsPanel');
+            var errorArea = document.getElementById('geminiErrorArea');
+            var content = document.getElementById('geminiResultContent');
 
             content.innerHTML = '';
-            errorArea.innerHTML = `
-                <div class="gemini-result-error">
-                    <div class="gemini-error-title">⚠ 分析失败</div>
-                    <div class="gemini-error-detail">${errorMsg}</div>
-                    <button class="gemini-error-btn" onclick="closeSuggestions();showGeminiSettings();">重新配置 API Key</button>
-                </div>`;
+            errorArea.innerHTML = '<div class="gemini-result-error">' +
+                '<div class="gemini-error-title">⚠ 分析失败</div>' +
+                '<div class="gemini-error-detail">' + errorMsg + '</div>' +
+                '<button class="gemini-error-btn" onclick="closeSuggestions();showGeminiSettings();" aria-label="重新配置 API Key">重新配置 API Key</button>' +
+                '</div>';
             panel.classList.add('active');
 
-            setTimeout(() => {
+            setTimeout(function() {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         }
 
         async function adoptStrategy() {
             if (!geminiParsedResult) return;
-            const btn = document.getElementById('btnAdoptStrategy');
-            const btnReject = document.getElementById('btnRejectStrategy');
+            var btn = document.getElementById('btnAdoptStrategy');
+            var btnReject = document.getElementById('btnRejectStrategy');
             if (!btn) return;
 
             btn.disabled = true;
             if (btnReject) btnReject.disabled = true;
 
-            const isOptimize = geminiParsedResult.isOptimize;
-            const resultType = isOptimize ? '优化' : '维持';
+            var isOptimize = geminiParsedResult.isOptimize;
+            var resultType = isOptimize ? '优化' : '维持';
 
             btn.textContent = '处理中...';
 
             try {
-                const baseUrl = await getApiBaseUrl();
-                const body = {
+                var baseUrl = await getApiBaseUrl();
+                var body = {
                     strategy_code: isOptimize ? (geminiParsedResult.strategyCode || '') : '',
                     analysis_result: resultType,
                     action: '采纳',
@@ -1644,30 +2309,30 @@ ${indicatorContribText || '暂无数据'}
                     full_analysis: geminiFullResult || ''
                 };
 
-                const res = await fetch(`${baseUrl}/api/save-review-result`, {
+                var res = await fetch(baseUrl + '/api/save-review-result', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                const data = await res.json();
+                var data = await res.json();
                 if (data.success) {
                     btn.textContent = '已采纳 ✓';
                     btn.classList.add('adopted');
                     if (btnReject) btnReject.classList.add('disabled-btn');
                     if (data.strategy_updated) {
-                        alert('策略已更新！后续回测将使用最新策略。');
+                        showToast('策略已更新！后续回测将使用最新策略。', 'success');
                     } else {
-                        alert('结论已记录。');
+                        showToast('结论已记录。', 'success');
                     }
                     loadReviewHistory();
                 } else {
-                    alert('操作失败: ' + (data.error || '未知错误'));
+                    showToast('操作失败: ' + (data.error || '未知错误'), 'error');
                     btn.disabled = false;
                     if (btnReject) btnReject.disabled = false;
                     btn.textContent = '采纳';
                 }
             } catch (e) {
-                alert('操作失败: ' + e.message);
+                showToast('操作失败: ' + e.message, 'error');
                 btn.disabled = false;
                 if (btnReject) btnReject.disabled = false;
                 btn.textContent = '采纳';
@@ -1676,21 +2341,21 @@ ${indicatorContribText || '暂无数据'}
 
         async function rejectStrategy() {
             if (!geminiParsedResult) return;
-            const btn = document.getElementById('btnRejectStrategy');
-            const btnAdopt = document.getElementById('btnAdoptStrategy');
+            var btn = document.getElementById('btnRejectStrategy');
+            var btnAdopt = document.getElementById('btnAdoptStrategy');
             if (!btn) return;
 
             btn.disabled = true;
             if (btnAdopt) btnAdopt.disabled = true;
 
-            const isOptimize = geminiParsedResult.isOptimize;
-            const resultType = isOptimize ? '优化' : '维持';
+            var isOptimize = geminiParsedResult.isOptimize;
+            var resultType = isOptimize ? '优化' : '维持';
 
             btn.textContent = '处理中...';
 
             try {
-                const baseUrl = await getApiBaseUrl();
-                const body = {
+                var baseUrl = await getApiBaseUrl();
+                var body = {
                     strategy_code: '',
                     analysis_result: resultType,
                     action: '不采纳',
@@ -1698,26 +2363,26 @@ ${indicatorContribText || '暂无数据'}
                     full_analysis: geminiFullResult || ''
                 };
 
-                const res = await fetch(`${baseUrl}/api/save-review-result`, {
+                var res = await fetch(baseUrl + '/api/save-review-result', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                const data = await res.json();
+                var data = await res.json();
                 if (data.success) {
                     btn.textContent = '已记录';
                     btn.classList.add('adopted');
                     if (btnAdopt) btnAdopt.classList.add('disabled-btn');
-                    alert('不采纳：策略文件未修改，复盘结果已记录。');
+                    showToast('不采纳：策略文件未修改，复盘结果已记录。', 'info');
                     loadReviewHistory();
                 } else {
-                    alert('操作失败: ' + (data.error || '未知错误'));
+                    showToast('操作失败: ' + (data.error || '未知错误'), 'error');
                     btn.disabled = false;
                     if (btnAdopt) btnAdopt.disabled = false;
                     btn.textContent = '不采纳';
                 }
             } catch (e) {
-                alert('操作失败: ' + e.message);
+                showToast('操作失败: ' + e.message, 'error');
                 btn.disabled = false;
                 if (btnAdopt) btnAdopt.disabled = false;
                 btn.textContent = '不采纳';
@@ -1726,43 +2391,45 @@ ${indicatorContribText || '暂无数据'}
 
         async function loadReviewHistory() {
             try {
-                const baseUrl = await waitForFlaskReady(5, 1000);
+                var baseUrl = await waitForFlaskReady(5, 1000);
                 if (!baseUrl) return;
-                const res = await fetch(`${baseUrl}/api/review-history`);
-                const history = await res.json();
+                var res = await fetch(baseUrl + '/api/review-history');
+                var history = await res.json();
                 renderReviewHistory(history);
             } catch (e) {}
         }
 
         function renderReviewHistory(history) {
-            const tbody = document.getElementById('review-history-tbody');
+            var tbody = document.getElementById('review-history-tbody');
             if (!tbody) return;
             if (!history || !history.length) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9CA3AF">暂无复盘记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="td-center-muted">暂无复盘记录</td></tr>';
+                updateScrollShadows();
                 return;
             }
-            let html = '';
-            history.slice().reverse().forEach(h => {
-                const tag = h.result === '优化' ? '<span class="tag wrong">优化</span>' : '<span class="tag correct">维持</span>';
-                const actionTag = h.action === '采纳' ? '<span class="tag correct">采纳</span>' : '<span class="tag pending">不采纳</span>';
-                html += `<tr><td>${h.date}</td><td>${tag}</td><td>${actionTag}</td><td class="summary-col">${h.summary || '--'}</td></tr>`;
+            var html = '';
+            history.slice().reverse().forEach(function(h) {
+                var tag = h.result === '优化' ? '<span class="tag wrong">优化</span>' : '<span class="tag correct">维持</span>';
+                var actionTag = h.action === '采纳' ? '<span class="tag correct">采纳</span>' : '<span class="tag pending">不采纳</span>';
+                html += '<tr><td>' + h.date + '</td><td>' + tag + '</td><td>' + actionTag + '</td><td class="summary-col">' + (h.summary || '--') + '</td></tr>';
             });
             tbody.innerHTML = html;
+            updateScrollShadows();
         }
 
         function copyGeminiResult() {
             if (!geminiFullResult) return;
-            const btn = document.getElementById('btnCopyResult');
+            var btn = document.getElementById('btnCopyResult');
 
-            navigator.clipboard.writeText(geminiFullResult).then(() => {
+            navigator.clipboard.writeText(geminiFullResult).then(function() {
                 btn.textContent = '已复制';
                 btn.classList.add('copied');
-                setTimeout(() => {
+                setTimeout(function() {
                     btn.textContent = '复制全文';
                     btn.classList.remove('copied');
                 }, 2000);
-            }).catch(() => {
-            const textarea = document.createElement('textarea');
+            }).catch(function() {
+                var textarea = document.createElement('textarea');
                 textarea.value = geminiFullResult;
                 document.body.appendChild(textarea);
                 textarea.select();
@@ -1770,7 +2437,7 @@ ${indicatorContribText || '暂无数据'}
                 document.body.removeChild(textarea);
                 btn.textContent = '已复制';
                 btn.classList.add('copied');
-                setTimeout(() => {
+                setTimeout(function() {
                     btn.textContent = '复制全文';
                     btn.classList.remove('copied');
                 }, 2000);
@@ -1778,11 +2445,11 @@ ${indicatorContribText || '暂无数据'}
         }
 
         function showGeminiSettings() {
-            const modal = document.getElementById('geminiKeyModal');
-            const keyInput = document.getElementById('geminiKeyInput');
-            const modelInput = document.getElementById('geminiModelIdInput');
-            const baseUrlInput = document.getElementById('geminiBaseUrlInput');
-            const toast = document.getElementById('modalToast');
+            var modal = document.getElementById('geminiKeyModal');
+            var keyInput = document.getElementById('geminiKeyInput');
+            var modelInput = document.getElementById('geminiModelIdInput');
+            var baseUrlInput = document.getElementById('geminiBaseUrlInput');
+            var toast = document.getElementById('modalToast');
 
             keyInput.value = localStorage.getItem('gemini_api_key') || '';
             modelInput.value = localStorage.getItem('gemini_model_id') || 'gemini-2.0-flash';
@@ -1796,7 +2463,7 @@ ${indicatorContribText || '暂无数据'}
             toast.textContent = '';
 
             modal.classList.add('active');
-            setTimeout(() => modelInput.focus(), 100);
+            setTimeout(function() { modelInput.focus(); }, 100);
         }
 
         function closeGeminiSettings() {
@@ -1804,15 +2471,15 @@ ${indicatorContribText || '暂无数据'}
         }
 
         function saveGeminiConfig() {
-            const modelInput = document.getElementById('geminiModelIdInput');
-            const keyInput = document.getElementById('geminiKeyInput');
-            const baseUrlInput = document.getElementById('geminiBaseUrlInput');
-            const toast = document.getElementById('modalToast');
-            const modelId = modelInput.value.trim();
-            const apiKey = keyInput.value.trim();
-            const baseUrl = baseUrlInput.value.trim();
+            var modelInput = document.getElementById('geminiModelIdInput');
+            var keyInput = document.getElementById('geminiKeyInput');
+            var baseUrlInput = document.getElementById('geminiBaseUrlInput');
+            var toast = document.getElementById('modalToast');
+            var modelId = modelInput.value.trim();
+            var apiKey = keyInput.value.trim();
+            var baseUrl = baseUrlInput.value.trim();
 
-            let hasError = false;
+            var hasError = false;
 
             if (!modelId) {
                 modelInput.classList.add('error');
@@ -1841,7 +2508,7 @@ ${indicatorContribText || '暂无数据'}
             toast.textContent = '保存成功 ✓';
             toast.className = 'modal-toast success';
 
-            setTimeout(() => {
+            setTimeout(function() {
                 closeGeminiSettings();
                 toast.className = 'modal-toast';
                 toast.textContent = '';
@@ -1857,11 +2524,11 @@ ${indicatorContribText || '暂无数据'}
             document.getElementById('geminiModelIdInput').value = '';
             document.getElementById('geminiBaseUrlInput').value = '';
 
-            const toast = document.getElementById('modalToast');
+            var toast = document.getElementById('modalToast');
             toast.textContent = '已清除';
             toast.className = 'modal-toast info';
 
-            setTimeout(() => {
+            setTimeout(function() {
                 closeGeminiSettings();
                 toast.className = 'modal-toast';
                 toast.textContent = '';
@@ -1870,15 +2537,496 @@ ${indicatorContribText || '暂无数据'}
 
         function showSuggestions(data) {
         }
-        
+
         function closeSuggestions() {
             document.getElementById('suggestionsPanel').classList.remove('active');
         }
-        
+
         function saveSuggestions() {
         }
     </script>
+
+    <div class="ta-drawer-overlay" id="taDrawerOverlay" onclick="closeTADrawer()"></div>
+    <div class="ta-drawer" id="taDrawer">
+        <div class="ta-drawer-header">
+            <div class="ta-drawer-title">🤖 TradingAgents 团队</div>
+            <button class="ta-drawer-close" onclick="closeTADrawer()" aria-label="关闭面板">✕</button>
+        </div>
+        <div class="ta-data-bar" id="taDataBar">
+            <span id="taDataSummary">正在加载数据...</span>
+            <span class="ta-data-bar-toggle" onclick="toggleTADataFull()">展开详情 ▼</span>
+            <div class="ta-data-bar-full" id="taDataFull"></div>
+        </div>
+        <div class="ta-agent-status" id="taAgentStatus">
+            <span class="ta-agent-tag" data-agent="Market Analyst">📊 Market</span>
+            <span class="ta-agent-tag" data-agent="Sentiment Analyst">💭 Sentiment</span>
+            <span class="ta-agent-tag" data-agent="News Analyst">📰 News</span>
+            <span class="ta-agent-tag" data-agent="Fundamentals Analyst">📈 Fundamentals</span>
+        </div>
+        <div class="ta-messages" id="taMessages">
+            <div class="ta-msg ta-msg-agent">
+                <div class="ta-msg-label">TradingAgents</div>
+                你好！我是 TradingAgents 多智能体交易分析团队。我会自动读取当前市场情绪数据，对 QQQ 和 SPY 进行全面分析。<br><br>
+                点击下方"开始分析"或直接输入你的问题。
+            </div>
+        </div>
+        <div class="ta-input-area">
+            <div class="ta-mode-row">
+                <div class="ta-mode-tabs">
+                    <button class="ta-mode-tab active" data-mode="chat" onclick="switchTAMode('chat')">💬 对话</button>
+                    <button class="ta-mode-tab" data-mode="analysis" onclick="switchTAMode('analysis')">🤖 团队分析</button>
+                </div>
+                <div class="ta-mode-hint" id="taModeHint">直接与 AI 对话（快速回复）</div>
+            </div>
+            <div class="ta-input-row">
+                <input type="text" class="ta-input" id="taInput" placeholder="输入问题或直接开始分析..." onkeydown="if(event.key==='Enter')taSend()">
+                <button class="ta-send-btn" id="taSendBtn" onclick="taSend()">发送</button>
+                <button class="ta-cancel-btn" id="taCancelBtn" onclick="taCancel()" style="display:none">⏹ 停止</button>
+            </div>
+            <div class="ta-quick-actions">
+                <span class="ta-quick-btn" onclick="taQuickQuestion('为什么是这个仓位？')">为什么是这个仓位？</span>
+                <span class="ta-quick-btn" onclick="taQuickQuestion('风险在哪里？')">风险在哪里？</span>
+                <span class="ta-quick-btn" onclick="taQuickQuestion('与昨天相比变化？')">与昨天相比变化？</span>
+                <span class="ta-quick-btn" onclick="taQuickQuestion('策略阈值合理吗？')">策略阈值合理吗？</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay ta-config-modal" id="taConfigModal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeTAConfigModal()" aria-label="关闭">✕</button>
+            <h3 class="modal-title">配置 TradingAgents</h3>
+
+            <div class="modal-field">
+                <div class="modal-field-label"><span><span class="required-star">*</span>LLM 提供商</span></div>
+                <div class="ta-provider-grid" id="taProviderGrid">
+                    <div class="ta-provider-opt selected" data-provider="openai" onclick="selectTAProvider('openai')">OpenAI<small>GPT-4o</small></div>
+                    <div class="ta-provider-opt" data-provider="anthropic" onclick="selectTAProvider('anthropic')">Anthropic<small>Claude</small></div>
+                    <div class="ta-provider-opt" data-provider="google_genai" onclick="selectTAProvider('google_genai')">Google<small>Gemini</small></div>
+                    <div class="ta-provider-opt" data-provider="deepseek" onclick="selectTAProvider('deepseek')">DeepSeek<small>Reasoner/Chat</small></div>
+                    <div class="ta-provider-opt" data-provider="openrouter" onclick="selectTAProvider('openrouter')">OpenRouter<small>Multi</small></div>
+                    <div class="ta-provider-opt" data-provider="ollama" onclick="selectTAProvider('ollama')">Ollama<small>Local</small></div>
+                    <div class="ta-provider-opt" data-provider="custom" onclick="selectTAProvider('custom')">自定义<small>OpenAI兼容</small></div>
+                </div>
+            </div>
+
+            <div class="modal-field" id="taCustomProviderField" style="display:none">
+                <div class="modal-field-label"><span><span class="required-star">*</span>自定义 Base URL</span></div>
+                <input type="text" id="taCustomBaseUrlInput" class="modal-input" placeholder="例如 https://api.example.com/v1">
+                <div class="modal-field-hint">使用 OpenAI 兼容接口的第三方服务，需同时填写模型名称</div>
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label"><span><span class="required-star">*</span>API 密钥</span></div>
+                <input type="password" id="taApiKeyInput" class="modal-input" placeholder="输入 API Key">
+                <div class="modal-input-error" id="taApiKeyError">必填</div>
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label"><span>深度思考模型（选填）</span></div>
+                <input type="text" id="taDeepModelInput" class="modal-input" placeholder="例如 gpt-4o（留空使用默认）">
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label"><span>快速思考模型（选填）</span></div>
+                <input type="text" id="taQuickModelInput" class="modal-input" placeholder="例如 gpt-4o-mini（留空使用默认）">
+            </div>
+
+            <div class="modal-field">
+                <div class="modal-field-label"><span>分析师组合</span></div>
+                <div class="ta-analyst-grid" id="taAnalystGrid">
+                    <span class="ta-analyst-opt selected" data-analyst="market" onclick="toggleTAAnalyst(this)">📊 Market</span>
+                    <span class="ta-analyst-opt selected" data-analyst="social" onclick="toggleTAAnalyst(this)">💭 Sentiment</span>
+                    <span class="ta-analyst-opt selected" data-analyst="news" onclick="toggleTAAnalyst(this)">📰 News</span>
+                    <span class="ta-analyst-opt" data-analyst="fundamentals" onclick="toggleTAAnalyst(this)">📈 Fundamentals</span>
+                </div>
+            </div>
+
+            <div class="modal-toast" id="taModalToast"></div>
+
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-clear" onclick="clearTAConfig()">清除配置</button>
+                <button class="modal-btn modal-btn-save" onclick="saveTAConfig()">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var taRunning = false;
+        var taCurrentProvider = localStorage.getItem('ta_provider') || 'openai';
+        var taMode = 'chat';
+        var taCurrentTaskId = null;
+        var taCurrentStreamDiv = null;
+
+        window.openTADrawer = function() {
+            document.getElementById('taDrawer').classList.add('active');
+            document.getElementById('taDrawerOverlay').classList.add('active');
+            loadTADataSummary();
+        };
+
+        window.closeTADrawer = function() {
+            document.getElementById('taDrawer').classList.remove('active');
+            document.getElementById('taDrawerOverlay').classList.remove('active');
+        };
+
+        window.toggleTADataFull = function() {
+            var el = document.getElementById('taDataFull');
+            el.classList.toggle('show');
+            var toggle = document.querySelector('.ta-data-bar-toggle');
+            toggle.textContent = el.classList.contains('show') ? '收起详情 ▲' : '展开详情 ▼';
+        };
+
+        async function loadTADataSummary() {
+            try {
+                var baseUrl = await getApiBaseUrl();
+                var r = await fetch(baseUrl + '/api/ta/current-data');
+                var d = await r.json();
+                document.getElementById('taDataSummary').textContent = '📊 ' + d.summary;
+            } catch(e) {
+                document.getElementById('taDataSummary').textContent = '数据加载失败';
+            }
+        }
+
+        function addTAMessage(type, label, content) {
+            var container = document.getElementById('taMessages');
+            var div = document.createElement('div');
+            div.className = 'ta-msg ta-msg-' + type;
+            var html = '';
+            if (label) html += '<div class="ta-msg-label">' + label + '</div>';
+            html += content;
+            div.innerHTML = html;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div;
+        }
+
+        function addTATyping() {
+            var container = document.getElementById('taMessages');
+            var div = document.createElement('div');
+            div.className = 'ta-typing';
+            div.id = 'taTyping';
+            div.innerHTML = '<span></span><span></span><span></span>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeTATyping() {
+            var el = document.getElementById('taTyping');
+            if (el) el.remove();
+        }
+
+        function setAgentStatus(agentName, status) {
+            var tags = document.querySelectorAll('.ta-agent-tag');
+            tags.forEach(function(tag) {
+                if (tag.getAttribute('data-agent') === agentName) {
+                    tag.className = 'ta-agent-tag ' + status;
+                }
+            });
+        }
+
+        function resetAgentStatus() {
+            var tags = document.querySelectorAll('.ta-agent-tag');
+            tags.forEach(function(tag) {
+                tag.className = 'ta-agent-tag';
+            });
+        }
+
+        window.taSend = async function() {
+            if (taRunning) return;
+
+            var apiKey = localStorage.getItem('ta_api_key');
+            if (!apiKey) {
+                showTAConfig();
+                showToast('请先配置 TradingAgents API Key', 'info');
+                return;
+            }
+
+            var input = document.getElementById('taInput');
+            var question = input.value.trim();
+            input.value = '';
+
+            if (question) {
+                addTAMessage('user', '', question);
+            }
+
+            taRunning = true;
+            taCurrentTaskId = null;
+            document.getElementById('taSendBtn').style.display = 'none';
+            document.getElementById('taCancelBtn').style.display = 'inline-block';
+            resetAgentStatus();
+            addTATyping();
+
+            var provider = localStorage.getItem('ta_provider') || 'openai';
+            var deepModel = localStorage.getItem('ta_deep_model') || '';
+            var quickModel = localStorage.getItem('ta_quick_model') || '';
+            var analysts = getSelectedAnalysts();
+            var customBaseUrl = localStorage.getItem('ta_custom_base_url') || '';
+
+            var body = {
+                provider: provider,
+                api_key: apiKey,
+                deep_think_llm: deepModel || null,
+                quick_think_llm: quickModel || null,
+                user_question: question || null,
+                custom_base_url: customBaseUrl || null,
+            };
+            if (taMode === 'analysis') {
+                body.selected_analysts = analysts;
+            }
+
+            var endpoint = taMode === 'analysis' ? '/api/ta/analyze' : '/api/ta/chat';
+
+            try {
+                var baseUrl = await getApiBaseUrl();
+                var response = await fetch(baseUrl + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                if (!response.ok) {
+                    var errData = await response.json();
+                    throw new Error(errData.error || '请求失败');
+                }
+
+                removeTATyping();
+                var currentLabel = '';
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var buffer = '';
+
+                function processChunk() {
+                    reader.read().then(function(result) {
+                        if (result.done) {
+                            finishTA();
+                            return;
+                        }
+                        buffer += decoder.decode(result.value, { stream: true });
+                        var lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (line.startsWith('event: ')) {
+                                currentLabel = line.substring(7);
+                            } else if (line.startsWith('data: ') && currentLabel) {
+                                var dataStr = line.substring(6);
+                                try {
+                                    var data = JSON.parse(dataStr);
+                                    handleTAEvent(currentLabel, data);
+                                } catch(e) {}
+                                currentLabel = '';
+                            }
+                        }
+                        processChunk();
+                    }).catch(function(err) {
+                        addTAMessage('error', '错误', err.message);
+                        finishTA();
+                    });
+                }
+                processChunk();
+            } catch(err) {
+                removeTATyping();
+                addTAMessage('error', '错误', err.message);
+                finishTA();
+            }
+        };
+
+        var taCurrentStreamDiv = null;
+
+        function handleTAEvent(type, data) {
+            switch(type) {
+                case 'task_created':
+                    taCurrentTaskId = data.task_id;
+                    break;
+                case 'data_summary':
+                    document.getElementById('taDataSummary').textContent = '📊 ' + data.summary;
+                    break;
+                case 'status':
+                    taCurrentStreamDiv = null;
+                    addTAMessage('system', '状态', data.message);
+                    break;
+                case 'agent_status':
+                    if (data.status === 'working' || data.status === 'initializing' || data.status === 'initialized' || data.status === 'running') {
+                        setAgentStatus(data.agent, 'working');
+                    } else if (data.status === 'completed') {
+                        setAgentStatus(data.agent, 'completed');
+                    }
+                    break;
+                case 'agent_chunk':
+                    if (!taCurrentStreamDiv) {
+                        taCurrentStreamDiv = addTAMessage('agent', data.agent || 'AI', '');
+                    }
+                    taCurrentStreamDiv.innerHTML += data.content.replace(/\n/g, '<br>');
+                    document.getElementById('taMessages').scrollTop = document.getElementById('taMessages').scrollHeight;
+                    break;
+                case 'chat_complete':
+                    taCurrentStreamDiv = null;
+                    break;
+                case 'analysis_update':
+                    taCurrentStreamDiv = null;
+                    var label = '';
+                    if (data.phase === 'situation_summary') label = '📋 局势总结';
+                    else if (data.phase === 'final_decision') label = '🎯 最终决策';
+                    addTAMessage('agent', label, data.content.replace(/\n/g, '<br>'));
+                    break;
+                case 'debate_update':
+                    taCurrentStreamDiv = null;
+                    addTAMessage('agent', '💬 辩论', data.content.replace(/\n/g, '<br>'));
+                    break;
+                case 'final_decision':
+                    taCurrentStreamDiv = null;
+                    var signalClass = (data.signal || '').toLowerCase();
+                    var signalHtml = '<span class="ta-msg-signal ' + signalClass + '">' + (data.signal || 'N/A') + '</span>';
+                    var detail = '<strong>置信度:</strong> ' + ((data.confidence || 0) * 100).toFixed(0) + '%';
+                    if (data.target_price) detail += ' | <strong>目标价:</strong> ' + data.target_price;
+                    if (data.stop_loss) detail += ' | <strong>止损:</strong> ' + data.stop_loss;
+                    if (data.time_horizon_days) detail += ' | <strong>周期:</strong> ' + data.time_horizon_days + '天';
+                    detail += '<br><strong>理由:</strong> ' + (data.rationale || '').replace(/\n/g, '<br>');
+                    if (data.warning_message) detail += '<br><strong>⚠️ 警告:</strong> ' + data.warning_message;
+                    addTAMessage('decision', '🎯 交易信号', signalHtml + detail);
+                    break;
+                case 'error':
+                    taCurrentStreamDiv = null;
+                    addTAMessage('error', '错误', data.message);
+                    break;
+                case 'done':
+                    taCurrentStreamDiv = null;
+                    break;
+            }
+        }
+
+        function finishTA() {
+            taRunning = false;
+            taCurrentTaskId = null;
+            document.getElementById('taSendBtn').style.display = 'inline-block';
+            document.getElementById('taCancelBtn').style.display = 'none';
+            removeTATyping();
+        }
+
+        window.switchTAMode = function(mode) {
+            taMode = mode;
+            document.querySelectorAll('.ta-mode-tab').forEach(function(el) {
+                el.classList.toggle('active', el.getAttribute('data-mode') === mode);
+            });
+            var hint = document.getElementById('taModeHint');
+            var input = document.getElementById('taInput');
+            if (mode === 'chat') {
+                hint.textContent = '直接与 AI 对话（快速回复）';
+                input.placeholder = '输入问题或聊天...';
+            } else {
+                hint.textContent = '启动完整多智能体团队分析（较慢）';
+                input.placeholder = '输入问题或直接开始团队分析...';
+            }
+        };
+
+        window.taCancel = function() {
+            if (taCurrentTaskId) {
+                getApiBaseUrl().then(function(baseUrl) {
+                    fetch(baseUrl + '/api/ta/cancel', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: taCurrentTaskId }),
+                    });
+                });
+            }
+            finishTA();
+        };
+
+        window.taQuickQuestion = function(q) {
+            document.getElementById('taInput').value = q;
+            taSend();
+        };
+
+        function getSelectedAnalysts() {
+            var selected = [];
+            document.querySelectorAll('.ta-analyst-opt.selected').forEach(function(el) {
+                selected.push(el.getAttribute('data-analyst'));
+            });
+            return selected.length > 0 ? selected : ['market', 'social', 'news'];
+        }
+
+        function normalizeTAAnalyst(a) {
+            return a === 'sentiment' ? 'social' : a;
+        }
+
+        window.showTAConfig = function() {
+            var modal = document.getElementById('taConfigModal');
+            var provider = localStorage.getItem('ta_provider') || 'openai';
+            selectTAProvider(provider);
+            document.getElementById('taApiKeyInput').value = localStorage.getItem('ta_api_key') || '';
+            document.getElementById('taDeepModelInput').value = localStorage.getItem('ta_deep_model') || '';
+            document.getElementById('taQuickModelInput').value = localStorage.getItem('ta_quick_model') || '';
+            document.getElementById('taCustomBaseUrlInput').value = localStorage.getItem('ta_custom_base_url') || '';
+
+            var savedAnalysts = JSON.parse(localStorage.getItem('ta_analysts') || '["market","social","news"]').map(normalizeTAAnalyst);
+            document.querySelectorAll('.ta-analyst-opt').forEach(function(el) {
+                var a = el.getAttribute('data-analyst');
+                if (savedAnalysts.indexOf(a) >= 0) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+
+            modal.classList.add('active');
+        };
+
+        window.selectTAProvider = function(provider) {
+            taCurrentProvider = provider;
+            document.querySelectorAll('.ta-provider-opt').forEach(function(el) {
+                el.classList.toggle('selected', el.getAttribute('data-provider') === provider);
+            });
+            var customField = document.getElementById('taCustomProviderField');
+            customField.style.display = (provider === 'custom') ? 'block' : 'none';
+        };
+
+        window.toggleTAAnalyst = function(el) {
+            el.classList.toggle('selected');
+        };
+
+        window.saveTAConfig = function() {
+            var apiKey = document.getElementById('taApiKeyInput').value.trim();
+            if (!apiKey) {
+                document.getElementById('taApiKeyError').style.display = 'block';
+                return;
+            }
+            document.getElementById('taApiKeyError').style.display = 'none';
+
+            localStorage.setItem('ta_provider', taCurrentProvider);
+            localStorage.setItem('ta_api_key', apiKey);
+            localStorage.setItem('ta_deep_model', document.getElementById('taDeepModelInput').value.trim());
+            localStorage.setItem('ta_quick_model', document.getElementById('taQuickModelInput').value.trim());
+            localStorage.setItem('ta_analysts', JSON.stringify(getSelectedAnalysts()));
+            localStorage.setItem('ta_custom_base_url', document.getElementById('taCustomBaseUrlInput').value.trim());
+
+            document.getElementById('taConfigModal').classList.remove('active');
+            showToast('TradingAgents 配置已保存', 'success');
+        };
+
+        window.clearTAConfig = function() {
+            localStorage.removeItem('ta_provider');
+            localStorage.removeItem('ta_api_key');
+            localStorage.removeItem('ta_deep_model');
+            localStorage.removeItem('ta_quick_model');
+            localStorage.removeItem('ta_analysts');
+            localStorage.removeItem('ta_custom_base_url');
+            document.getElementById('taApiKeyInput').value = '';
+            document.getElementById('taDeepModelInput').value = '';
+            document.getElementById('taQuickModelInput').value = '';
+            document.getElementById('taCustomBaseUrlInput').value = '';
+            selectTAProvider('openai');
+            document.querySelectorAll('.ta-analyst-opt').forEach(function(el, i) {
+                el.classList.toggle('selected', i < 3);
+            });
+            showToast('配置已清除', 'info');
+        };
+
+        window.closeTAConfigModal = function() {
+            document.getElementById('taConfigModal').classList.remove('active');
+        };
+    })();
+    </script>
 </body>
 </html>
-<!-- Gemini分析功能：数据来源 validation_results.json + daily_log.json，
-     策略来源 strategy_rules.py，API转发通过 /api/call-gemini -->

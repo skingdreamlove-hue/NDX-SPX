@@ -9,6 +9,12 @@ import csv as builtin_csv
 from flask import Flask, jsonify, send_from_directory, request
 from datetime import datetime
 
+import time
+from tradingagents_wrapper import (
+    start_analysis_task, start_chat_task, get_task_events, is_task_done,
+    get_current_data_summary, cancel_task
+)
+
 app = Flask(__name__, static_folder='.')
 
 # 动态端口查找
@@ -183,9 +189,12 @@ _OLD_CSV_MAP = {
     'emotion': 'sentiment',
     'verify_5d_ndx_return': 'ndx_5d',
     'verify_5d_spx_return': 'spx_5d',
+    'verify_10d_ndx_return': 'ndx_10d',
+    'verify_10d_spx_return': 'spx_10d',
     'verify_20d_ndx_return': 'ndx_20d',
     'verify_20d_spx_return': 'spx_20d',
     'verify_5d_result': 'verified_5d',
+    'verify_10d_result': 'verified_10d',
     'verify_20d_result': 'verified_20d',
 }
 
@@ -248,21 +257,68 @@ def append_daily_csv_row(filepath, row):
     rows.append(row)
     write_daily_csv(filepath, rows)
 
-def compute_verification(sentiment, ndx_ret, spx_ret, neutral_threshold):
+def compute_verification(sentiment, ndx_ret, spx_ret, days):
     """
     sentiment: 当日情绪标签
     ndx_ret / spx_ret: 后续 N 日收益率（分别传入5/10/20日）
-    neutral_threshold: 动态中性阈值（0.5 × 20日滚动标准差）
+    days: 验证周期（5/10/20）
     返回: True=判断正确, False=判断错误, None=无法判定
     """
     if ndx_ret is None or spx_ret is None:
         return None
+
+    weighted_return = ndx_ret * 0.7 + spx_ret * 0.3
+
+    THRESHOLDS = {
+        '恐慌': {
+            5:  (3,  -3,  -5,  5),
+            10: (4,  -4,  -6,  6),
+            20: (6,  -5,  -8,  8),
+        },
+        '极度恐慌': {
+            5:  (5,  -2,  -5,  5),
+            10: (7,  -3,  -6,  6),
+            20: (10, -4,  -8,  8),
+        },
+        '贪婪': {
+            5:  (-3, 3,  -5,  5),
+            10: (-4, 4,  -6,  6),
+            20: (-6, 5,  -8,  8),
+        },
+        '极度贪婪': {
+            5:  (-5, 2,  -5,  5),
+            10: (-7, 3,  -6,  6),
+            20: (-10, 4,  -8,  8),
+        },
+        '中性': {
+            5:  (None, None, -5,  5),
+            10: (None, None, -6,  6),
+            20: (None, None, -8,  8),
+        },
+    }
+
+    t = THRESHOLDS.get(sentiment, THRESHOLDS['中性']).get(days, THRESHOLDS['中性'][5])
+    correct_thr, wrong_thr, neutral_low, neutral_high = t
+
     if sentiment in ('恐慌', '极度恐慌'):
-        return (ndx_ret > 0) and (spx_ret > 0)
+        if weighted_return > correct_thr:
+            return True
+        elif weighted_return < wrong_thr:
+            return False
+        else:
+            return None
     elif sentiment in ('贪婪', '极度贪婪'):
-        return (ndx_ret < 0) and (spx_ret < 0)
+        if weighted_return < correct_thr:
+            return True
+        elif weighted_return > wrong_thr:
+            return False
+        else:
+            return None
     elif sentiment == '中性':
-        return (abs(ndx_ret) < neutral_threshold) and (abs(spx_ret) < neutral_threshold)
+        if neutral_low <= weighted_return <= neutral_high:
+            return True
+        else:
+            return False
     else:
         return None
 
@@ -299,7 +355,7 @@ def compute_period_accuracy(signals):
     signals: 所有历史情绪信号列表，每条含 correct_5d/10d/20d 字段
     返回: acc_5d, acc_10d, acc_20d（百分比，样本不足返回 None）
     """
-    MIN_SAMPLE = 30
+    MIN_SAMPLE = 3
 
     result = {}
     for days in [5, 10, 20]:
@@ -434,7 +490,7 @@ def update_daily_log_csv():
             spx_r = v5.get('spx_return')
             row['ndx_5d'] = ('%+.2f%%' % ndx_r) if ndx_r is not None else '--'
             row['spx_5d'] = ('%+.2f%%' % spx_r) if spx_r is not None else '--'
-            result = compute_verification(sentiment, ndx_r, spx_r, nt)
+            result = compute_verification(sentiment, ndx_r, spx_r, 5)
             if result is True:
                 row['verified_5d'] = '正确'
                 correct_5d = True
@@ -452,7 +508,7 @@ def update_daily_log_csv():
             spx_r = v10.get('spx_return')
             row['ndx_10d'] = ('%+.2f%%' % ndx_r) if ndx_r is not None else '--'
             row['spx_10d'] = ('%+.2f%%' % spx_r) if spx_r is not None else '--'
-            result = compute_verification(sentiment, ndx_r, spx_r, nt)
+            result = compute_verification(sentiment, ndx_r, spx_r, 10)
             if result is True:
                 row['verified_10d'] = '正确'
                 correct_10d = True
@@ -470,7 +526,7 @@ def update_daily_log_csv():
             spx_r = v20.get('spx_return')
             row['ndx_20d'] = ('%+.2f%%' % ndx_r) if ndx_r is not None else '--'
             row['spx_20d'] = ('%+.2f%%' % spx_r) if spx_r is not None else '--'
-            result = compute_verification(sentiment, ndx_r, spx_r, nt)
+            result = compute_verification(sentiment, ndx_r, spx_r, 20)
             if result is True:
                 row['verified_20d'] = '正确'
                 correct_20d = True
@@ -954,9 +1010,105 @@ def api_review_history():
     return jsonify(history)
 
 
+@app.route('/api/ta/analyze', methods=['POST'])
+def api_ta_analyze():
+    data = request.json
+    provider = data.get('provider', 'openai')
+    api_key = data.get('api_key', '')
+    deep_think_llm = data.get('deep_think_llm') or None
+    quick_think_llm = data.get('quick_think_llm') or None
+    selected_analysts = data.get('selected_analysts') or None
+    user_question = data.get('user_question') or None
+    custom_base_url = data.get('custom_base_url') or None
+
+    if not api_key:
+        return jsonify({"error": "缺少 API Key"}), 400
+
+    task_id = start_analysis_task(
+        provider=provider,
+        api_key=api_key,
+        deep_think_llm=deep_think_llm,
+        quick_think_llm=quick_think_llm,
+        selected_analysts=selected_analysts,
+        user_question=user_question,
+        custom_base_url=custom_base_url,
+    )
+
+    def generate():
+        yield f"event: task_created\ndata: {json.dumps({'task_id': task_id}, ensure_ascii=False)}\n\n"
+        while True:
+            events = get_task_events(task_id)
+            for event in events:
+                event_type = event.get("type", "message")
+                event_data = event.get("data", {})
+                yield f"event: {event_type}\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                if event_type == "done":
+                    return
+            time.sleep(0.3)
+
+    return app.response_class(generate(), mimetype="text/event-stream")
+
+
+@app.route('/api/ta/current-data', methods=['GET'])
+def api_ta_current_data():
+    summary = get_current_data_summary()
+    return jsonify({"summary": summary})
+
+
+@app.route('/api/ta/config', methods=['POST'])
+def api_ta_config():
+    return jsonify({"success": True, "message": "Config saved"})
+
+
+@app.route('/api/ta/cancel', methods=['POST'])
+def api_ta_cancel():
+    data = request.json
+    task_id = data.get('task_id', '')
+    if task_id:
+        cancel_task(task_id)
+        return jsonify({"success": True, "message": "已发送取消请求"})
+    return jsonify({"error": "缺少 task_id"}), 400
+
+
+@app.route('/api/ta/chat', methods=['POST'])
+def api_ta_chat():
+    data = request.json
+    provider = data.get('provider', 'openai')
+    api_key = data.get('api_key', '')
+    deep_think_llm = data.get('deep_think_llm') or None
+    quick_think_llm = data.get('quick_think_llm') or None
+    user_question = data.get('user_question') or None
+    custom_base_url = data.get('custom_base_url') or None
+
+    if not api_key:
+        return jsonify({"error": "缺少 API Key"}), 400
+
+    task_id = start_chat_task(
+        provider=provider,
+        api_key=api_key,
+        deep_think_llm=deep_think_llm,
+        quick_think_llm=quick_think_llm,
+        user_question=user_question,
+        custom_base_url=custom_base_url,
+    )
+
+    def generate():
+        yield f"event: task_created\ndata: {json.dumps({'task_id': task_id}, ensure_ascii=False)}\n\n"
+        while True:
+            events = get_task_events(task_id)
+            for event in events:
+                event_type = event.get("type", "message")
+                event_data = event.get("data", {})
+                yield f"event: {event_type}\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                if event_type == "done":
+                    return
+            time.sleep(0.2)
+
+    return app.response_class(generate(), mimetype="text/event-stream")
+
+
 if __name__ == '__main__':
     port = find_available_port()
-    
     # 将端口信息写入文件供启动脚本读取
     port_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.server_port')
     with open(port_file, 'w') as f:
