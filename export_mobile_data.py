@@ -1,10 +1,13 @@
 import json
 import os
+import shutil
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MOBILE_DATA_DIR = os.path.join(BASE_DIR, "docs", "data")
 MOBILE_DATA_FILE = os.path.join(MOBILE_DATA_DIR, "latest.json")
+FUND_DATA_SRC = os.path.join(BASE_DIR, "real_fund_data.json")
+FUND_DATA_DST = os.path.join(MOBILE_DATA_DIR, "real_fund_data.json")
 
 def safe_read_json(path):
     if not os.path.exists(path):
@@ -96,6 +99,12 @@ def export():
     print(f"     Sentiment: {mobile_data['sentiment']['level']}")
     print(f"     VIX: {mobile_data['indicators']['vix']}")
     print(f"     Position: {mobile_data['position']['advice']}")
+
+    if os.path.exists(FUND_DATA_SRC):
+        shutil.copy2(FUND_DATA_SRC, FUND_DATA_DST)
+        print(f"[OK] Fund data copied to {FUND_DATA_DST}")
+    else:
+        print(f"[WARN] Fund data not found: {FUND_DATA_SRC}")
 
 if __name__ == "__main__":
     export()
