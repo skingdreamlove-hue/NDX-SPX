@@ -1,5 +1,5 @@
 var MARKET_DATA = {
-  "current_vix": 16.700000762939453,
+  "current_vix": 16.59000015258789,
   "nasdaq100_drawdown": -0.66,
   "sp500_drawdown": -0.58,
   "sentiment_analysis": "中性",
@@ -15,7 +15,7 @@ var MARKET_DATA = {
   "sp500_deviation_200ma": 9.78,
   "nasdaq100_deviation_200ma": 16.72,
   "sentiment_result": "中性",
-  "vix_term_ratio": 0.8337493854442927,
+  "vix_term_ratio": 0.8282575928042204,
   "tnx_ma50_diff": 4.29,
   "is_rate_shock": false,
   "ndx_spx_ratio": 0.2535,
@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-05-23 13:50:23"
+  "last_update": "2026-05-25 16:36:49"
 };
