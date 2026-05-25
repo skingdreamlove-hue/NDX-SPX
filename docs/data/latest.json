@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-05-25 16:36:49",
+  "_generated": "2026-05-25 20:06:31",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
@@ -19,7 +19,7 @@
   "tnx_ma50_diff": 4.29,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-05-25 16:36:49",
+  "last_update": "2026-05-25 20:06:31",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
