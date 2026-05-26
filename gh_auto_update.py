@@ -3,7 +3,7 @@
 GitHub Actions Auto Update — 美股情绪监测数据自动抓取
 在 GitHub Actions 中定时运行，自动更新 market_data.js 供手机页面使用。
 """
-import os, sys, json
+import os, sys, json, re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -362,43 +362,47 @@ def fetch_fund_page_status(code):
         resp = requests.get(url, headers=headers, timeout=15)
         resp.encoding = "utf-8"
         html = resp.text
-        # 提取申购状态
-        # 常见格式: 申购状态：开放申购 / 暂停申购 / 限购
         import re
-        # 匹配: 申购状态</span><span class="...">开放申购</span>
+
+        status_text = None
+        limit_raw = None
+
+        # 查找 交易状态 到 开放赎回/暂停赎回 之间的文本
         m = re.search(
-            r'申购状态[：:]\s*</span>\s*<span[^>]*>\s*([^<]+)\s*<',
+            r'交易状态[：:]\s*(.+?)(?:开放赎回|暂停赎回)',
             html, re.DOTALL
         )
-        if not m:
-            # 尝试另一种格式
+        if m:
+            raw = m.group(1).strip()
+            raw = re.sub(r'<[^>]+>', '', raw).strip()
+            status_text = raw
+        else:
+            # 回退：找 申购状态
             m = re.search(
-                r'申购状态[：:]\s*<span[^>]*>\s*([^<]+)\s*<',
+                r'申购状态[：:]\s*(.+?)(?:<|$)',
                 html, re.DOTALL
             )
-        if not m:
+            if m:
+                raw = m.group(1).strip()
+                raw = re.sub(r'<[^>]+>', '', raw).strip()
+                status_text = raw
+
+        if not status_text:
             return None, None
 
-        status_text = m.group(1).strip()
-
-        # 提取单日限购额度
-        limit_text = None
-        lm = re.search(r'单日累计购买上限[：:]?\s*([^<\n]+?)(?:<|$)',
-                       html, re.DOTALL)
+        # 提取限购额度
+        lm = re.search(r'单日累计购买上限[：:]?\s*([^<\n\r]+?)(?:<|\n|\r|$)', html)
         if lm:
             limit_raw = lm.group(1).strip()
-            if limit_raw:
-                limit_text = f"(单日累计购买上限{limit_raw})"
 
         full_status = status_text
-        if limit_text:
-            full_status = f"{status_text} {limit_text}"
+        if limit_raw:
+            full_status = f"{status_text} (单日累计购买上限{limit_raw})"
 
         return status_text, full_status
     except Exception as e:
         print(f"    [FAIL] {code}: {e}")
         return None, None
-
 
 def load_existing_fund_data():
     """读取现有的基金数据文件"""
