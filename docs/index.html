@@ -233,40 +233,20 @@ body{
 
 <script>
 
-
 // ═══════════════════════════════════════════════════════════════════
-//  US Stock Sentiment - Mobile (Self-sufficient Live Version)
-//  Computes everything from Yahoo Finance in the browser
+//  US Stock Sentiment - Mobile (Cache-based Version)
+//  从 GHA 缓存的 latest.json 加载数据，无浏览器端实时请求
 // ═══════════════════════════════════════════════════════════════════
 
 var DATA_URL = 'data/latest.json';
 var FUND_URL = 'data/real_fund_data.json';
 var currentData = null;
 var fundData = [];
-var yfData = {};
 var fetchTimeout = 12000;
 var currentTab = 'sentiment';
 var fundApiUpdating = false;
 var fundApiTime = null;
 var fundStatusUpdating = false;
-var fundStatusTime = null;
-
-// ── 情绪策略阈值（与 strategy_rules.py 保持一致）──
-var THRESHOLDS = {
-  extremeFear: { vix_term: 1.0, vix: 35, credit_spread: 8.0, ndx_drawdown: -30, spx_drawdown: -20, ndx_breadth: 15 },
-  fear: { vix: [25,35], credit_spread: [5.5,8], ndx_drawdown: [-30,-15], spx_drawdown: [-20,-10], ndx_breadth: [15,25] },
-  extremeGreed: { ndx_dev_ma200: 28, spx_dev_ma200: 18, vix_low_ndx_dev: { vix: 13, ndx_dev: 22 } },
-  greed: { ndx_dev_ma200: 20, spx_dev_ma200: 12, vix_low_ndx_dev: { vix: [12,16], ndx_dev: 15 } }
-};
-var POSITION_MAP = {
-  '极度恐慌': { above200: 100, below200: 100 },
-  '恐慌': { above200: 100, below200: 100 },
-  '中性': { above200: 100, below200: 88 },
-  '贪婪': { above200: 90, below200: 70 },
-  '极度贪婪': { above200: 65, below200: 55 }
-};
-var SIP_MULTIPLIER = { '极度恐慌': 5, '恐慌': 3, '中性': 1, '贪婪': 0, '极度贪婪': 0 };
-var DAILY_DCA = 300;
 
 // ── 工具函数 ──
 function $id(id){return document.getElementById(id)}
@@ -296,230 +276,11 @@ function getEmotionColorClass(level){
 function fmtNum(v,dec){return v!=null?Number(v).toLocaleString(undefined,{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0}):'---'}
 function fmtPct(v){return v!=null?v.toFixed(1)+'%':'---'}
 
-// ── Yahoo Finance 数据获取 ──
-function fetchYF(symbol){
-  var ctrl=new AbortController();
-  var tid=setTimeout(function(){ctrl.abort()},fetchTimeout);
-  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=5d';
-  return fetch(url,{signal:ctrl.signal})
-    .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
-    .then(function(d){
-      var meta=d.chart.result[0].meta;
-      var quote=d.chart.result[0].indicators.quote[0];
-      var n=quote.close.length;
-      return {symbol:symbol,price:quote.close[n-1],prevClose:meta.chartPreviousClose,high:meta.regularMarketDayHigh,low:meta.regularMarketDayLow}
-    })
-    .catch(function(e){clearTimeout(tid);return null})
-}
-
-// 获取含历史收盘价的Yahoo数据
-function fetchYFHistory(symbol, range){
-  var ctrl=new AbortController();
-  var tid=setTimeout(function(){ctrl.abort()},15000);
-  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range='+(range||'1y');
-  return fetch(url,{signal:ctrl.signal})
-    .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
-    .then(function(d){
-      var result=d.chart.result[0];
-      var meta=result.meta;
-      var timestamps=result.timestamp||[];
-      var quote=result.indicators.quote[0];
-      var closes=quote.close||[];
-      var prices=[];
-      for(var i=0;i<closes.length;i++){
-        if(closes[i]!=null)prices.push(closes[i]);
-      }
-      return {symbol:symbol,price:prices.length>0?prices[prices.length-1]:null,prevClose:meta.chartPreviousClose,closes:prices}
-    })
-    .catch(function(e){clearTimeout(tid);return null})
-}
-
-// ── 技术指标计算 ──
-function calcSMA(prices, period){
-  if(!prices||prices.length<period)return null;
-  var sum=0;
-  for(var i=prices.length-period;i<prices.length;i++){sum+=prices[i]}
-  return sum/period
-}
-function calcDrawdown(prices, lookbackDays){
-  if(!prices||prices.length<2)return null;
-  var n=prices.length;
-  var start=Math.max(0,n-lookbackDays);
-  var high=-Infinity;
-  for(var i=start;i<n;i++){if(prices[i]>high)high=prices[i]}
-  var cur=prices[n-1];
-  return ((cur-high)/high)*100
-}
-function calcDeviation(current, ref){
-  if(current==null||ref==null||ref===0)return null;
-  return ((current-ref)/ref)*100
-}
-
-// ── 情绪计算引擎（移植自 strategy_rules.py）──
-function calcEmotionCore(ndx_drawdown, spx_drawdown, ndx_dev_ma200, spx_dev_ma200, vix, vix_term, rate_shock){
-  var T=THRESHOLDS;
-  // 极度恐慌检查
-  if(vix_term!=null&&vix_term>T.extremeFear.vix_term) return ['极度恐慌',['vix_term']];
-  if(vix!=null&&vix>T.extremeFear.vix) return ['极度恐慌',['vix']];
-  if(rate_shock&&ndx_drawdown!=null&&ndx_drawdown<=T.extremeFear.ndx_drawdown) return ['极度恐慌',['ndx_drawdown']];
-  if(rate_shock&&spx_drawdown!=null&&spx_drawdown<=T.extremeFear.spx_drawdown) return ['极度恐慌',['spx_drawdown']];
-  
-  // 恐慌检查
-  if(vix!=null&&vix>=T.fear.vix[0]&&vix<T.fear.vix[1]) return ['恐慌',['vix']];
-  if(rate_shock&&ndx_drawdown!=null&&ndx_drawdown>T.fear.ndx_drawdown[0]&&ndx_drawdown<=T.fear.ndx_drawdown[1]) return ['恐慌',['ndx_drawdown']];
-  if(rate_shock&&spx_drawdown!=null&&spx_drawdown>T.fear.spx_drawdown[0]&&spx_drawdown<=T.fear.spx_drawdown[1]) return ['恐慌',['spx_drawdown']];
-  
-  // 极度贪婪检查
-  if(ndx_dev_ma200!=null&&ndx_dev_ma200>T.extremeGreed.ndx_dev_ma200) return ['极度贪婪',['ndx_dev_ma200']];
-  if(spx_dev_ma200!=null&&spx_dev_ma200>T.extremeGreed.spx_dev_ma200) return ['极度贪婪',['spx_dev_ma200']];
-  if(vix!=null&&vix<T.extremeGreed.vix_low_ndx_dev.vix&&ndx_dev_ma200!=null&&ndx_dev_ma200>T.extremeGreed.vix_low_ndx_dev.ndx_dev) return ['极度贪婪',['vix_low_ndx_dev']];
-  
-  // 贪婪检查
-  if(ndx_dev_ma200!=null&&ndx_dev_ma200>T.greed.ndx_dev_ma200) return ['贪婪',['ndx_dev_ma200']];
-  if(spx_dev_ma200!=null&&spx_dev_ma200>T.greed.spx_dev_ma200) return ['贪婪',['spx_dev_ma200']];
-  if(vix!=null&&vix>=T.greed.vix_low_ndx_dev.vix[0]&&vix<T.greed.vix_low_ndx_dev.vix[1]&&ndx_dev_ma200!=null&&ndx_dev_ma200>T.greed.vix_low_ndx_dev.ndx_dev) return ['贪婪',['vix_low_ndx_dev']];
-  
-  return ['中性',[]]
-}
-
-function calcSignalStrength(sentiment, triggers, pcrBonus){
-  var dims=new Set();
-  for(var i=0;i<triggers.length;i++){
-    var t=triggers[i];
-    if(t==='vix'||t==='vix_term'||t==='vix_low_ndx_dev') dims.add('波动率');
-    else if(t==='ndx_drawdown'||t==='spx_drawdown'||t==='ndx_dev_ma200'||t==='spx_dev_ma200') dims.add('技术面');
-  }
-  var n=dims.size+(pcrBonus?1:0);
-  if(n>=3) return '★★★★★ 极强';
-  if(n>=2) return '★★★★ 强';
-  if(n>=1) return '★★★ 中等';
-  return '★ 弱'
-}
-
-function getTargetPosition(sentiment, ndxAboveMa200){
-  var m=POSITION_MAP[sentiment];
-  if(!m) return 100;
-  return ndxAboveMa200?m.above200:m.below200
-}
-
-function getPositionAdvice(sentiment, currentPos, targetPos){
-  if(!currentPos||currentPos==null) return '';
-  if(sentiment.indexOf('恐慌')>=0) return '分批加仓';
-  if(sentiment==='中性') return '维持定投';
-  var diff=targetPos-currentPos;
-  if(diff>10) return '适度加仓';
-  if(diff<-10) return '适度减仓';
-  return '维持仓位'
-}
-
-function getDailyBuyAmount(sentiment){
-  var m=SIP_MULTIPLIER[sentiment];
-  return (m!=null?m:1)*DAILY_DCA
-}
-
-function calcRateShock(tnxMa50Diff){
-  return tnxMa50Diff!=null&&tnxMa50Diff>10
-}
-
-// ── 从Yahoo实时数据计算情绪 ──
-function computeLiveSentiment(){
-  // 检查是否真的获取到了实时数据（Yahoo在浏览器端常被CORS拦截）
-  var hasLive=yfData.vix||yfData.qqq||yfData.spy||(yfData.ndx&&yfData.ndx.price);
-  if(!hasLive){
-    liveData=null;
-    return null
-  }
-  // 获取NDX和GSPC的历史价格
-  var ndx=yfData.ndx, gspc=yfData.gspc;
-  var tnx=yfData.tnx;
-  var vixData=yfData.vix, vix3mData=yfData.vix3m;
-  var qqq=yfData.qqq, spy=yfData.spy;
-  
-  // NDX指标
-  var ndxPrice=ndx?ndx.price:(qqq?qqq.price*10:null);  // NDX ~ QQQ*10 approx
-  var ndxMa200=ndx?calcSMA(ndx.closes,200):null;
-  var ndxDevMa200=calcDeviation(ndxPrice,ndxMa200);
-  var ndxDrawdown=ndx?calcDrawdown(ndx.closes,252):null;
-  
-  // SPX指标
-  var spxPrice=gspc?gspc.price:(spy?spy.price:null);
-  var spxMa200=gspc?calcSMA(gspc.closes,200):null;
-  var spxDevMa200=calcDeviation(spxPrice,spxMa200);
-  var spxDrawdown=gspc?calcDrawdown(gspc.closes,252):null;
-  
-  // VIX指标
-  var vix=vixData?vixData.price:null;
-  var vixTerm=vixData&&vix3mData&&vix3mData.price?vixData.price/vix3mData.price:null;
-  
-  // TNX MA50 (rate shock)
-  var tnxMa50=tnx&&tnx.closes&&tnx.closes.length>50?calcSMA(tnx.closes,50):null;
-  var tnxMa50Diff=null;
-  if(tnx&&tnx.price!=null&&tnxMa50!=null) tnxMa50Diff=calcDeviation(tnx.price,tnxMa50);
-  var rateShock=calcRateShock(tnxMa50Diff);
-  
-  // 当前价格（显示用）
-  var ndxDisp=ndx?ndx.price:(qqq?qqq.price*10:null);
-  var spxDisp=gspc?gspc.price:(spy?spy.price:null);
-  if(ndxDisp==null) ndxDisp=ndxPrice;
-  if(spxDisp==null) spxDisp=spxPrice;
-  
-  // NDX/SPX 比值
-  var ndxSpxRatio=spxPrice?(ndxPrice||ndxDisp)/spxPrice:null;
-  
-  // IWM/SPY
-  var iwm=yfData.iwm;
-  var iwmSpyRatio=spxPrice&&iwm?iwm.price/spxPrice:null;
-  
-  // 情绪计算
-  var emotionResult=calcEmotionCore(ndxDrawdown, spxDrawdown, ndxDevMa200, spxDevMa200, vix, vixTerm, rateShock);
-  var sentiment=emotionResult[0];
-  var triggers=emotionResult[1];
-  
-  var isNdxAbove200=ndxDevMa200!=null&&ndxDevMa200>0;
-  var targetPos=getTargetPosition(sentiment, isNdxAbove200);
-  var dailyBuy=getDailyBuyAmount(sentiment);
-  var advice=getPositionAdvice(sentiment, 50, targetPos);
-  
-  // 信号强度（不含PCR增强，因为浏览器难以获取）
-  var strength=calcSignalStrength(sentiment, triggers, false);
-  
-  var now=new Date();
-  var mm=String(now.getMonth()+1).padStart(2,'0');
-  var dd=String(now.getDate()).padStart(2,'0');
-  var hh=String(now.getHours()).padStart(2,'0');
-  var mi=String(now.getMinutes()).padStart(2,'0');
-  
-  liveData={
-    last_update: now.getFullYear()+'-'+mm+'-'+dd+' '+hh+':'+mi+':'+String(now.getSeconds()).padStart(2,'0'),
-    sentiment_result: sentiment,
-    signal_strength: strength,
-    sentiment_conditions: triggers,
-    position_advice: advice,
-    target_position: targetPos,
-    daily_buy_amount: dailyBuy,
-    current_vix: vix,
-    vix_term_ratio: vixTerm,
-    current_nasdaq100: ndxDisp,
-    current_sp500: spxDisp,
-    nasdaq100_drawdown: ndxDrawdown,
-    sp500_drawdown: spxDrawdown,
-    nasdaq100_dev_ma200: ndxDevMa200,
-    sp500_dev_ma200: spxDevMa200,
-    ndx_breadth_200ma: null,  // 浏览器无法获取
-    ndx_spx_ratio: ndxSpxRatio,
-    iwm_spy_ratio: iwmSpyRatio,
-    tnx_ma50_diff: tnxMa50Diff,
-    rate_shock: rateShock,
-    is_live: true
-  };
-  return liveData
-}
-
 // ── 数据加载 ──
 function convertMarketData(md){
   if(!md)return null;
   return {
-    sentiment_result: md.sentiment_result||'中性',
+    sentiment_result: md.sentiment_result||md.sentiment_analysis||'中性',
     signal_strength: md.signal_strength||'★ 弱',
     sentiment_conditions: md.sentiment_conditions||[],
     position_advice: md.position_advice||'--',
@@ -539,7 +300,7 @@ function convertMarketData(md){
     tnx_ma50_diff: md.tnx_ma50_diff,
     rate_shock: md.is_rate_shock||false,
     is_live: false,
-    last_update: md.last_update,
+    last_update: md.last_update||md._generated,
     indicators: {
       vix: md.current_vix,
       vix_term_ratio: md.vix_term_ratio,
@@ -565,7 +326,7 @@ function convertMarketData(md){
 }
 
 function loadStaticData(){
-  return fetchJSON(DATA_URL).then(function(d){
+  return fetchJSON(DATA_URL+'?t='+Date.now()).then(function(d){
     currentData=d;
     return d
   }).catch(function(e){
@@ -587,42 +348,22 @@ function fetchJSON(url,timeout){
     .catch(function(e){clearTimeout(tid);throw e})
 }
 
-function loadLiveData(){
-  setStatus(false,'获取实时数据...');
-  return Promise.all([
-    fetchYF('^VIX').catch(function(){return null}),
-    fetchYF('^VIX3M').catch(function(){return null}),
-    fetchYF('QQQ').catch(function(){return null}),
-    fetchYF('SPY').catch(function(){return null}),
-    fetchYF('^TNX').catch(function(){return null}),
-    fetchYFHistory('^NDX','1y').catch(function(){return null}),
-    fetchYFHistory('^GSPC','1y').catch(function(){return null}),
-    fetchYF('IWM').catch(function(){return null})
-  ]).then(function(r){
-    yfData.vix=r[0];yfData.vix3m=r[1];yfData.qqq=r[2];yfData.spy=r[3];
-    yfData.tnx=r[4];yfData.ndx=r[5];yfData.gspc=r[6];yfData.iwm=r[7];
-    var c=r.filter(function(x){return x!=null}).length;
-    setStatus(c>0,'Yahoo: '+c+'/'+r.length);
-  })
-}
-
 // ── UI构建 ──
 function buildSentimentUI(){
-  var d=liveData||currentData;
+  var d=currentData;
   if(!d){
     $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
     return
   }
-  
-  // 合并实时数据与快照数据
-  var s=d.sentiment_result||'中性';
+
+  var s=d.sentiment_result||d.sentiment_analysis||'中性';
   var st=d.signal_strength||'★ 弱';
   var conds=d.sentiment_conditions||[];
   var pAdv=d.position_advice||'--';
   var pTarget=d.target_position||'--';
   var pBuy=d.daily_buy_amount||'--';
-  
-  // 指标值（优先使用实时计算的，回退到快照数据）
+
+  // 指标值
   var vix=d.current_vix;
   var ndxPrice=d.current_nasdaq100;
   var spxPrice=d.current_sp500;
@@ -635,24 +376,27 @@ function buildSentimentUI(){
   var ndxSpxRatio=d.ndx_spx_ratio;
   var iwmSpyRatio=d.iwm_spy_ratio;
   var tnxDev=d.tnx_ma50_diff;
-  
-  // 如果当前数据来自快照但没有实时覆盖，保留快照值
-  if(!d.is_live&&currentData){
-    var sd=currentData;
-    if(!vix) vix=sd.indicators&&sd.indicators.vix;
-    if(!ndxPrice) ndxPrice=sd.indices&&sd.indices.nasdaq100;
-    if(!spxPrice) spxPrice=sd.indices&&sd.indices.sp500;
-    if(!ndxDev) ndxDev=sd.indices&&sd.indices.nasdaq100_dev_ma200;
-    if(!spxDev) spxDev=sd.indices&&sd.indices.sp500_dev_ma200;
-    if(!ndxDraw) ndxDraw=sd.indices&&sd.indices.nasdaq100_drawdown;
-    if(!spxDraw) spxDraw=sd.indices&&sd.indices.sp500_drawdown;
-    if(!vixTerm) vixTerm=sd.indicators&&sd.indicators.vix_term_ratio;
-    if(!ndxBreadth) ndxBreadth=sd.indicators&&sd.indicators.ndx_breadth_200ma;
-    if(!ndxSpxRatio) ndxSpxRatio=sd.indicators&&sd.indicators.ndx_spx_ratio;
-    if(!iwmSpyRatio) iwmSpyRatio=sd.indicators&&sd.indicators.iwm_spy_ratio;
-    if(!tnxDev) tnxDev=sd.indicators&&sd.indicators.tnx_ma50_diff;
+
+  // 补充嵌套字段
+  if(d.indicators){
+    var ind=d.indicators;
+    if(vix==null) vix=ind.vix;
+    if(vixTerm==null) vixTerm=ind.vix_term_ratio;
+    if(ndxBreadth==null) ndxBreadth=ind.ndx_breadth_200ma;
+    if(ndxSpxRatio==null) ndxSpxRatio=ind.ndx_spx_ratio;
+    if(iwmSpyRatio==null) iwmSpyRatio=ind.iwm_spy_ratio;
+    if(tnxDev==null) tnxDev=ind.tnx_ma50_diff;
   }
-  
+  if(d.indices){
+    var idx=d.indices;
+    if(ndxPrice==null) ndxPrice=idx.nasdaq100;
+    if(spxPrice==null) spxPrice=idx.sp500;
+    if(ndxDev==null) ndxDev=idx.nasdaq100_dev_ma200;
+    if(spxDev==null) spxDev=idx.sp500_dev_ma200;
+    if(ndxDraw==null) ndxDraw=idx.nasdaq100_drawdown;
+    if(spxDraw==null) spxDraw=idx.sp500_drawdown;
+  }
+
   var sCls=getSentimentClass(s);
   var condHtml='';
   if(conds.length>0){
@@ -665,35 +409,34 @@ function buildSentimentUI(){
       condHtml+='<span class="tag '+sCls+'">'+label+'</span> '
     }
   }
-  
-  // 搜索指数价格
+
   var ndxDisp=ndxPrice!=null?Number(ndxPrice).toLocaleString(undefined,{maximumFractionDigits:0}):'---';
   var spxDisp=spxPrice!=null?Number(spxPrice).toLocaleString(undefined,{maximumFractionDigits:0}):'---';
-  
+
   var html=''
-    +'<div class="card signal-hero '+sCls+'"><div class="signal-label">当前情绪</div><div class="signal-emotion">'+s+'</div><div class="signal-strength">信号强度: '+st+'</div>'+((d.is_live?'<div style="font-size:10px;color:var(--green);margin-top:4px">⚡ 实时计算</div>':'<div style="font-size:10px;color:var(--orange);margin-top:4px">📦 快照数据</div>')+(condHtml?'<div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">触发: '+condHtml+'</div>':''))+'</div>'
-    
+    +'<div class="card signal-hero '+sCls+'"><div class="signal-label">当前情绪</div><div class="signal-emotion">'+s+'</div><div class="signal-strength">信号强度: '+st+'</div><div style="font-size:10px;color:var(--orange);margin-top:4px">📦 缓存数据'+((d._generated||d.last_update)?' <span style="color:var(--text-muted)">('+((d._generated||d.last_update)).slice(0,16)+')</span>':'')+'</div>'+((condHtml?'<div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">触发: '+condHtml+'</div>':''))+'</div>'
+
     +'<div class="card"><div class="position-row">'
       +'<div class="position-item"><div class="position-label">目标仓位</div><div class="position-val">'+(pTarget!='--'?pTarget+'%':'--')+'</div></div>'
       +'<div class="position-item"><div class="position-label">每日定投</div><div class="position-val">$'+(pBuy!='--'?pBuy:300)+'</div></div>'
       +'<div class="position-item"><div class="position-label">操作建议</div><div class="position-val" style="font-size:16px">'+pAdv+'</div></div>'
     +'</div></div>'
-    
+
     +'<div class="card"><div class="index-compare">'
       +'<div class="index-block"><div class="index-name">纳斯达克100</div><div class="index-price">'+ndxDisp+'</div><div class="index-dev">MA200偏差 '+(ndxDev!=null?ndxDev.toFixed(1)+'%':'---')+'</div><div class="index-dev">距高点 '+(ndxDraw!=null?ndxDraw.toFixed(1)+'%':'---')+'</div></div>'
       +'<div class="index-block"><div class="index-name">标普500</div><div class="index-price">'+spxDisp+'</div><div class="index-dev">MA200偏差 '+(spxDev!=null?spxDev.toFixed(1)+'%':'---')+'</div><div class="index-dev">距高点 '+(spxDraw!=null?spxDraw.toFixed(1)+'%':'---')+'</div></div>'
     +'</div></div>'
-    
+
     +'<div class="metrics-grid">'
       +'<div class="metric-item"><div class="metric-name">VIX 恐慌指数</div><div class="metric-val">'+(vix!=null?vix.toFixed(2):'---')+'</div><div class="metric-sub">期限比: '+(vixTerm!=null?vixTerm.toFixed(2):'---')+'</div></div>'
       +'<div class="metric-item"><div class="metric-name">NDX/SPX 比值</div><div class="metric-val">'+(ndxSpxRatio!=null?ndxSpxRatio.toFixed(2):'---')+'</div><div class="metric-sub">科技/传统</div></div>'
       +'<div class="metric-item"><div class="metric-name">IWM/SPY 比值</div><div class="metric-val">'+(iwmSpyRatio!=null?iwmSpyRatio.toFixed(2):'---')+'</div><div class="metric-sub">小盘/大盘</div></div>'
       +'<div class="metric-item"><div class="metric-name">10Y国债偏离MA50</div><div class="metric-val">'+(tnxDev!=null?tnxDev.toFixed(1)+'%':'---')+'</div><div class="metric-sub">'+(d.rate_shock?'⚠ 冲击中':'正常')+'</div></div>'
     +'</div>';
-  
-  // 如果快照有额外数据（PCR、宽度等），追加显示
-  if(currentData&&currentData.indicators){
-    var ind=currentData.indicators;
+
+  // 如果数据有额外指标，追加显示
+  if(d.indicators){
+    var ind=d.indicators;
     var extra='';
     if(ind.qqq_pcr!=null) extra+='<div class="metric-item"><div class="metric-name">QQQ PCR</div><div class="metric-val">'+ind.qqq_pcr.toFixed(2)+'</div><div class="metric-sub">快照</div></div>';
     if(ind.spy_pcr!=null) extra+='<div class="metric-item"><div class="metric-name">SPY PCR</div><div class="metric-val">'+ind.spy_pcr.toFixed(2)+'</div><div class="metric-sub">快照</div></div>';
@@ -701,12 +444,12 @@ function buildSentimentUI(){
     if(ind.ndx_breadth_200ma!=null) extra+='<div class="metric-item"><div class="metric-name">纳指>200日线</div><div class="metric-val">'+ind.ndx_breadth_200ma.toFixed(1)+'%</div><div class="metric-sub">快照</div></div>';
     if(ind.sp500_breadth_200ma!=null) extra+='<div class="metric-item"><div class="metric-name">标普>200日线</div><div class="metric-val">'+ind.sp500_breadth_200ma.toFixed(1)+'%</div><div class="metric-sub">快照</div></div>';
     if(ind.on_rrp_current!=null) extra+='<div class="metric-item"><div class="metric-name">ON RRP 余额</div><div class="metric-val">'+ind.on_rrp_current.toFixed(2)+'T</div><div class="metric-sub">快照</div></div>';
-    if(extra) html+='<div class="metrics-grid">'+extra+'</div>'+'<div style="text-align:right;padding:4px 0;font-size:9px;color:var(--text-muted)">↓ 以下为快照数据，非实时</div>'
+    if(extra) html+='<div class="metrics-grid">'+extra+'</div>'
   }
-  
+
   // 近期信号
-  if(currentData&&currentData.recent_signals&&currentData.recent_signals.length>0){
-    var rec=currentData.recent_signals;
+  if(d.recent_signals&&d.recent_signals.length>0){
+    var rec=d.recent_signals;
     var evHtml='';
     for(var i=rec.length-1;i>=0;i--){
       var ev=rec[i],eCls=getEmotionColorClass(ev.emotion);
@@ -714,13 +457,13 @@ function buildSentimentUI(){
     }
     html+='<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+evHtml+'</div></div>'
   }
-  
+
   $id('panelSentiment').innerHTML=html
 }
 
-// ── 基金数据功能（保持不变）──
+// ── 基金数据功能 ──
 function loadFundData(){
-  fetchJSON(FUND_URL).then(function(data){
+  fetchJSON(FUND_URL+'?t='+Date.now()).then(function(data){
     fundData = data;
     buildRestrictionUI();
   }).catch(function(e){
@@ -731,7 +474,7 @@ function loadFundData(){
 
 function buildRestrictionUI(){
   if(!fundData||fundData.length===0){
-    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据，点击右侧从API获取</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
+    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
     $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
   }
   var nasdaq=[],sp500=[];
@@ -744,7 +487,7 @@ function buildRestrictionUI(){
   sp500.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
   var apiCount=0;
   for(var i=0;i<fundData.length;i++){if(fundData[i]._apiSource)apiCount++}
-  var sourceInfo=fundApiTime?'API更新于 '+fundApiTime.getHours()+':'+String(fundApiTime.getMinutes()).padStart(2,'0')+(apiCount>0?' ('+apiCount+'只实时)':''):'本地缓存数据';
+  var sourceInfo=fundApiTime?'API更新于 '+fundApiTime.getHours()+':'+String(fundApiTime.getMinutes()).padStart(2,'0')+(apiCount>0?' ('+apiCount+'只实时)':''):'缓存数据';
   function renderGroup(title,list){
     var h='';
     var buyable=calcBuyableAmount(list);
@@ -754,19 +497,15 @@ function buildRestrictionUI(){
       var retRaw=f['近1年']||'-';
       var sourceTag=f._apiSource?'<span class="fund-source-tag fund-source-api">实时</span>':'<span class="fund-source-tag fund-source-local">缓存</span>';
       var s=f['交易状态']||'';
-      var isSuspended=s.indexOf('暂停申购')>=0||s.indexOf('限制申购')>=0;
       var limitHtml='';
-      if(!isSuspended){
-        var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
-        if(m){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;limitHtml='<div class="purchase-limit">每日上限: <strong>'+v.toLocaleString()+'元</strong></div>'}
-      }
+      var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
+      if(m&&s.indexOf('暂停申购')<0){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;limitHtml='<div class="purchase-limit">每日上限: <strong>'+v.toLocaleString()+'元</strong></div>'}
       h+='<div class="fund-card"><div class="fund-card-top"><div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'+getStatusBadge(s)+'</div><div class="fund-card-meta"><div class="fund-meta-item"><span class="fund-meta-label">近一年收益</span><span class="'+netRetCls+'" style="font-weight:700;font-size:13px">'+netRetStr+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div></div>'+limitHtml+'</div>'
     }
     return h
   }
-  var statusInfo=fundStatusTime?'状态 '+fundStatusTime.getHours()+':'+String(fundStatusTime.getMinutes()).padStart(2,'0'):'';
   var html=''
-    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+(statusInfo?' | '+statusInfo:'')+'</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button><button class="btn-fund-update btn-status-update" id="btnStatusUpdate" onclick="updateTradeStatus()">更新状态</button></div></div>'
+    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+'</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">更新净值</button><button class="btn-fund-update btn-status-update" id="btnStatusUpdate" onclick="updateTradeStatus()">更新状态</button></div></div>'
     +'<div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>'
     +'<div class="fund-group-title">纳斯达克100<span class="fund-group-count">'+nasdaq.length+'只基金</span></div>'
     +renderGroup('纳斯达克100',nasdaq)
@@ -774,8 +513,6 @@ function buildRestrictionUI(){
     +renderGroup('标普500',sp500);
   $id('panelRestriction').innerHTML=html
 }
-
-// ── 刷新主入口 ──
 
 // ── 基金辅助函数 ──
 function parsePct(str){
@@ -810,14 +547,14 @@ function calcBuyableAmount(list){
   var total=0,count=0;
   for(var i=0;i<list.length;i++){
     var f=list[i],s=f['交易状态']||'';
-    if(s.indexOf('暂停申购')>=0||s.indexOf('限制申购')>=0)continue;
+    if(s.indexOf('暂停申购')>=0)continue;
     var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
     if(m){var val=parseFloat(m[1])||0;if(m[2]==='万')val*=10000;total+=val;count++}
   }
   return{total:total,count:count}
 }
 
-// ── 基金基金实时数据更新 ──
+// ── 基金实时数据更新（JSONP 方式）──
 var fundApiResults=[];var fundApiOk=0;var fundApiTotal=0;
 function fetchFundRealtime(code){
   return new Promise(function(resolve,reject){
@@ -825,7 +562,8 @@ function fetchFundRealtime(code){
     var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
     function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
     window.jsonpgz=function(data){cleanup();resolve(data)};
-    script.src='https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f3,f12,f14,f2&secids=0.'+code+'&cb=jsonpgz';
+    // 增加 f166（申购状态码）和 f167（赎回状态码）
+    script.src='https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f12,f14,f166,f167&secids=0.'+code+'&cb=jsonpgz';
     document.body.appendChild(script)
   })
 }
@@ -835,14 +573,24 @@ function mergeApiData(apiResults, okCount){
     var f=fundData[i],api=apiResults[i];
     if(api&&api.data&&api.data.diff&&api.data.diff.length>0){
       var d=api.data.diff[0];
-      // d.f3 是日涨跌幅，不要覆盖缓存中的"近1年"
       f['日涨跌幅']=d.f3!=null?d.f3.toFixed(2)+'%':'--';
       f['实时净值']=d.f2;
       f.基金代码=''+d.f12;
-      f._apiSource=true
+      f._apiSource=true;
+      // 尝试更新交易状态（f166: 申购状态码, 1=可申购, 0=暂停）
+      if(d.f166!=null){
+        var currStatus=f['交易状态']||'';
+        // 仅当缓存数据是"暂停申购"而API说可申购时，才改写状态
+        if(d.f166===1 && currStatus.indexOf('暂停申购')>=0){
+          // 保留已有的限额信息
+          var limitMatch=currStatus.match(/\(单日累计购买上限[^)]+\)/);
+          var limitStr=limitMatch?limitMatch[0]:'';
+          f['交易状态']='开放申购'+(limitStr?' '+limitStr:'');
+        }
+      }
     }
   }
-  var msg='已更新 '+okCount+'/'+fundData.length+' 只基金实时净值';
+  var msg='已更新 '+okCount+'/'+fundData.length+' 只基金';
   showToast(msg,'success');
   if(typeof buildRestrictionUI==='function')buildRestrictionUI()
 }
@@ -864,12 +612,12 @@ function updateFundDataFromAPI(){
     if(done>=total){
       fundApiUpdating=false;
       fundApiTime=new Date();
-      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='在线更新'}
+      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='更新净值'}
       if(progressWrap)progressWrap.classList.remove('active');
       var pb=document.getElementById('fundProgressBar');
       if(pb)pb.style.width='0';
       mergeApiData(results,ok);
-      showToast('已更新 '+ok+'/'+total+' 只基金实时数据','success');
+      showToast('已更新 '+ok+'/'+total+' 只基金','success');
       return
     }
     var f=fundData[done];
@@ -883,40 +631,86 @@ function updateFundDataFromAPI(){
   updateProgress();next()
 }
 
-// 更新交易状态（目前留空，原有功能可复用updateFundDataFromAPI）
-function updateTradeStatus(){
-  showToast('交易状态查询功能已整合到在线更新','info')
+// ── 交易状态更新 ──
+var fundStatusResults=[];var fundStatusOk=0;
+function fetchFundTradeStatus(code){
+  return new Promise(function(resolve,reject){
+    var script=document.createElement('script');
+    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
+    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
+    window.jsonpgz=function(data){cleanup();resolve(data)};
+    // 使用与更新净值相同的API，但增加状态字段 f166,f167
+    script.src='https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f12,f14,f166,f167&secids=0.'+code+'&cb=jsonpgz';
+    document.body.appendChild(script)
+  })
 }
+function updateTradeStatus(){
+  if(fundStatusUpdating)return;
+  fundStatusUpdating=true;
+  showToast('正在获取交易状态...','info');
+  var total=fundData.length,done=0,ok=0;
+  var btnStatus=document.getElementById('btnStatusUpdate');
+  if(btnStatus)btnStatus.disabled=true;
+  function next(){
+    if(done>=total){
+      fundStatusUpdating=false;
+      if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
+      var updated=0;
+      for(var i=0;i<fundData.length;i++){
+        var f=fundData[i],r=fundStatusResults[i];
+        if(r&&r.data&&r.data.diff&&r.data.diff.length>0){
+          var d=r.data.diff[0];
+          if(d.f166!=null){
+            var currStatus=f['交易状态']||'';
+            var limitMatch=currStatus.match(/\(单日累计购买上限[^)]+\)/);
+            var limitStr=limitMatch?limitMatch[0]:'';
+            if(d.f166===1){
+              f['交易状态']='开放申购'+(limitStr?' '+limitStr:'');
+            }else if(d.f166===0){
+              f['交易状态']='暂停申购'+(limitStr?' '+limitStr:'');
+            }
+            updated++;
+          }
+        }
+      }
+      showToast('状态更新完成 ('+updated+'/'+total+')','success');
+      if(typeof buildRestrictionUI==='function')buildRestrictionUI();
+      return
+    }
+    var f=fundData[done];
+    if(!f||!f.基金代码){done++;next();return}
+    fetchFundTradeStatus(f.基金代码).then(function(data){
+      fundStatusResults[done]=data;ok++;done++;next()
+    }).catch(function(){
+      fundStatusResults[done]=null;done++;next()
+    })
+  }
+  next()
+}
+
+// ── 刷新主入口（简化版：仅加载缓存数据）──
 function refreshAll(){
   var btn=$id('btnRefresh');btn.classList.add('spinning');
-  setStatus(false,'获取实时数据...');
-  
-  // 先尝试加载快照数据（作为回退），同时获取实时数据
-  Promise.all([
-    loadStaticData().catch(function(){return null}),
-    loadLiveData()
-  ]).then(function(){
-    // 使用实时数据计算情绪
-    computeLiveSentiment();
-    if(!liveData && currentData){
-      setStatus(false,'静态数据'+(currentData.last_update?' ('+currentData.last_update+')':''));
-    }
+  setStatus(false,'加载数据...');
+
+  loadStaticData().then(function(){
     buildSentimentUI();
+    setStatus(false,'缓存数据'+(currentData.last_update||currentData._generated?' ('+(currentData.last_update||currentData._generated)+')':''));
   }).catch(function(e){
     console.error(e);
-    // 如果实时数据失败，回退到快照
     if(currentData){
-      liveData=null;
       buildSentimentUI();
-    } else {
+    }else if(typeof MARKET_DATA !== 'undefined'){
+      currentData=convertMarketData(MARKET_DATA);
+      buildSentimentUI();
+    }else{
       $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
     }
   }).finally(function(){
     btn.classList.remove('spinning');
-    // 显示数据实际更新时间（静态数据用 last_update，实时数据用当前时间）
-    var d=liveData||currentData;
-    if(d&&d.last_update){
-      $id('updateTime').textContent=d.last_update;
+    var d=currentData;
+    if(d&&(d.last_update||d._generated)){
+      $id('updateTime').textContent=(d.last_update||d._generated);
     }else{
       var now=new Date();
       var mm=String(now.getMonth()+1).padStart(2,'0');
@@ -938,8 +732,3 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 </body>
 </html>
-
-
-
-
-

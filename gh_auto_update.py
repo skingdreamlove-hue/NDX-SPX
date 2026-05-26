@@ -126,13 +126,14 @@ def main():
     print(f"  TNX: {tnx_current}, MA50偏离: {tnx_ma50_diff}%")
 
     # NDX/SPX Ratio
-    ndx_spx_ratio = round(spx_price / ndx_price, 4) if (ndx_price and spx_price) else None
+    ndx_spx_ratio = round(ndx_price / spx_price, 4) if (ndx_price and spx_price) else None
     print(f"  NDX/SPX: {ndx_spx_ratio}")
 
     # IWM/SPY
     iwm_price = iwm_data["current"] if iwm_data else None
-    iwm_spy_ratio = round(iwm_price / spx_price, 4) if (iwm_price and spx_price) else None
-    print(f"  IWM/SPX: {iwm_spy_ratio}")
+    spy_price = spy_data["current"] if spy_data else None
+    iwm_spy_ratio = round(iwm_price / spy_price, 4) if (iwm_price and spy_price) else None
+    print(f"  IWM/SPY: {iwm_spy_ratio}")
 
     # ── 3. 情绪计算 ──
     print()
@@ -312,9 +313,217 @@ def main():
         json.dump(mobile_data, f, ensure_ascii=False, indent=2)
     print(f"  [OK] {mobile_path}")
 
+    # ── 5. 更新基金申购状态 ──
+    update_fund_status()
+
     print()
     print(f"=== 完成: {last_update} ===")
     return 0
+
+
+# ════════════════════════════════════════════════════════
+#  基金申购状态自动更新（从天天基金网爬取）
+# ════════════════════════════════════════════════════════
+
+FUND_STATUS_FILE = BASE_DIR / "docs" / "data" / "real_fund_data.json"
+
+# 基金列表（代码、期望的分类）
+FUND_LIST = [
+    # 纳斯达克100
+    ("270042", "nasdaq"), ("040046", "nasdaq"), ("018043", "nasdaq"),
+    ("016532", "nasdaq"), ("000834", "nasdaq"), ("160213", "nasdaq"),
+    ("016452", "nasdaq"), ("019547", "nasdaq"), ("016055", "nasdaq"),
+    ("539001", "nasdaq"), ("019524", "nasdaq"), ("161130", "nasdaq"),
+    ("018966", "nasdaq"), ("019172", "nasdaq"), ("019736", "nasdaq"),
+    ("019441", "nasdaq"), ("015299", "nasdaq"),
+    # C 类
+    ("006479", "nasdaq"), ("014978", "nasdaq"), ("018044", "nasdaq"),
+    ("016453", "nasdaq"), ("008971", "nasdaq"), ("016533", "nasdaq"),
+    ("016057", "nasdaq"), ("012752", "nasdaq"), ("019525", "nasdaq"),
+    ("018967", "nasdaq"), ("019173", "nasdaq"), ("019737", "nasdaq"),
+    ("019442", "nasdaq"), ("015300", "nasdaq"), ("019548", "nasdaq"),
+    ("012870", "nasdaq"),
+    # 标普500
+    ("050025", "sp500"), ("017641", "sp500"), ("161125", "sp500"),
+    ("017028", "sp500"), ("006075", "sp500"), ("019305", "sp500"),
+    ("012860", "sp500"), ("017030", "sp500"), ("018064", "sp500"),
+    ("018065", "sp500"),
+]
+
+
+def fetch_fund_page_status(code):
+    """从天天基金网单个基金页面抓取申购状态"""
+    url = f"https://fund.eastmoney.com/{code}.html"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://fund.eastmoney.com/",
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.encoding = "utf-8"
+        html = resp.text
+        # 提取申购状态
+        # 常见格式: 申购状态：开放申购 / 暂停申购 / 限购
+        import re
+        # 匹配: 申购状态</span><span class="...">开放申购</span>
+        m = re.search(
+            r'申购状态[：:]\s*</span>\s*<span[^>]*>\s*([^<]+)\s*<',
+            html, re.DOTALL
+        )
+        if not m:
+            # 尝试另一种格式
+            m = re.search(
+                r'申购状态[：:]\s*<span[^>]*>\s*([^<]+)\s*<',
+                html, re.DOTALL
+            )
+        if not m:
+            return None, None
+
+        status_text = m.group(1).strip()
+
+        # 提取单日限购额度
+        limit_text = None
+        lm = re.search(r'单日累计购买上限[：:]?\s*([^<\n]+?)(?:<|$)',
+                       html, re.DOTALL)
+        if lm:
+            limit_raw = lm.group(1).strip()
+            if limit_raw:
+                limit_text = f"(单日累计购买上限{limit_raw})"
+
+        full_status = status_text
+        if limit_text:
+            full_status = f"{status_text} {limit_text}"
+
+        return status_text, full_status
+    except Exception as e:
+        print(f"    [FAIL] {code}: {e}")
+        return None, None
+
+
+def load_existing_fund_data():
+    """读取现有的基金数据文件"""
+    if FUND_STATUS_FILE.exists():
+        try:
+            with open(FUND_STATUS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"  [WARN] 读取现有基金数据失败: {e}")
+    # 如果没有现有文件，创建默认数据结构
+    data = []
+    for code, category in FUND_LIST:
+        data.append({
+            "基金代码": code,
+            "基金名称": "",
+            "类型": "A" if code not in [
+                "006479", "014978", "018044", "016453", "008971",
+                "016533", "016057", "012752", "019525", "018967",
+                "019173", "019737", "019442", "015300", "019548",
+                "012870", "006075", "019305", "012860", "017030",
+                "018065",
+            ] else "C",
+            "最新净值": "--",
+            "日涨跌幅": "--",
+            "净值日期": "N/A",
+            "交易状态": "暂停申购",
+            "购买手续费": "--",
+            "管理费率": "--",
+            "托管费率": "--",
+            "销售服务费": "--",
+            "合计费率": "--",
+            "近1年": "--",
+            "链接": f"https://fund.eastmoney.com/{code}.html",
+            "分类": category,
+        })
+    return data
+
+
+KNOWN_NAMES = {
+    "270042": "广发纳斯达克100ETF联接人民币(QDII)A",
+    "040046": "华安纳斯达克100ETF联接(QDII)A",
+    "018043": "天弘纳斯达克100指数发起(QDII)A",
+    "016532": "嘉实纳斯达克100ETF发起联接(QDII)人民币A",
+    "000834": "大成纳斯达克100ETF联接(QDII)A",
+    "160213": "国泰纳斯达克100指数(QDII)",
+    "016452": "南方纳斯达克100指数发起(QDII)A",
+    "019547": "招商纳斯达克100ETF发起式联接(QDII)A",
+    "016055": "博时纳斯达克100ETF发起式联接(QDII)人民币A",
+    "539001": "建信纳斯达克100指数(QDII)人民币A",
+    "019524": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)A",
+    "161130": "易方达纳斯达克100LOF",
+    "018966": "汇添富纳斯达克100ETF发起式联接(QDII)人民币A",
+    "019172": "摩根纳斯达克100指数(QDII)人民币A",
+    "019736": "宝盈纳斯达克100指数发起(QDII)人民币",
+    "019441": "万家纳斯达克100指数发起式(QDII)A",
+    "015299": "华夏纳斯达克100ETF发起式联接(QDII)A",
+    "006479": "广发纳斯达克100ETF联接人民币(QDII)C",
+    "014978": "华安纳斯达克100ETF联接(QDII)C",
+    "018044": "天弘纳斯达克100指数发起(QDII)C",
+    "016453": "南方纳斯达克100指数发起C",
+    "008971": "大成纳斯达克100ETF联接(QDII)C",
+    "016533": "嘉实纳斯达克100ETF发起式联接(QDII)C",
+    "016057": "博时纳斯达克100ETF发起式联接(QDII)C",
+    "012752": "建信纳斯达克100指数(QDII)C",
+    "019525": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)C",
+    "018967": "汇添富纳斯达克100ETF发起式联接(QDII)C",
+    "019173": "摩根纳斯达克100指数(QDII)人民币C",
+    "019737": "宝盈纳斯达克100指数发起(QDII)人民币C",
+    "019442": "万家纳斯达克100指数发起式(QDII)C",
+    "015300": "华夏纳斯达克100ETF发起式联接(QDII)C",
+    "019548": "招商纳斯达克100ETF发起式联接(QDII)C",
+    "012870": "易方达纳斯达克100ETF联接(QDII-LOF)C(人民币)",
+    "050025": "博时标普500ETF联接(QDII)A",
+    "017641": "摩根标普500指数(QDII)A",
+    "161125": "易方达标普500指数LOF",
+    "017028": "国泰标普500ETF发起式联接(QDII)A",
+    "006075": "博时标普500ETF联接(QDII)C",
+    "019305": "摩根标普500指数(QDII)C",
+    "012860": "易方达标普500指数(QDII)C",
+    "017030": "国泰标普500ETF发起式联接(QDII)C",
+    "018064": "华夏标普500ETF发起式联接(QDII)A(人民币)",
+    "018065": "华夏标普500ETF发起式联接(QDII)C",
+}
+
+
+def update_fund_status():
+    """更新所有基金的申购状态"""
+    print()
+    print(">>> 更新基金申购状态...")
+
+    fund_data = load_existing_fund_data()
+    code_to_item = {f["基金代码"]: f for f in fund_data}
+
+    total = len(FUND_LIST)
+    updated = 0
+    for i, (code, category) in enumerate(FUND_LIST, 1):
+        print(f"  [{i}/{total}] {code}...", end="")
+        status_simple, full_status = fetch_fund_page_status(code)
+
+        if code in code_to_item:
+            item = code_to_item[code]
+            if full_status:
+                item["交易状态"] = full_status
+                updated += 1
+                print(f" {status_simple}")
+            else:
+                print(" 无变化")
+            # 确保基金名称完整
+            if not item.get("基金名称") or item["基金名称"] == "":
+                if code in KNOWN_NAMES:
+                    item["基金名称"] = KNOWN_NAMES[code]
+            # 确保链接
+            link = f"https://fund.eastmoney.com/{code}.html"
+            item["链接"] = link
+            item["分类"] = category
+        else:
+            print(" 跳过(不在列表中)")
+
+    print(f"\n  状态更新: {updated}/{total} 只基金")
+
+    # 保存
+    FUND_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(FUND_STATUS_FILE, "w", encoding="utf-8") as f:
+        json.dump(fund_data, f, ensure_ascii=False, indent=2)
+    print(f"  [OK] {FUND_STATUS_FILE}")
 
 
 if __name__ == "__main__":
