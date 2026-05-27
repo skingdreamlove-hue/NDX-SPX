@@ -188,16 +188,10 @@ body{
   color:var(--blue);padding:6px 16px;border-radius:16px;font-size:12px;
   cursor:pointer;font-weight:600;transition:all .2s
 }
-.btn-fund-update:active{transform:scale(.95);opacity:.8}
-.btn-fund-update:disabled{opacity:.5;cursor:not-allowed}
-.fund-progress{width:100%;height:3px;background:var(--border-card);border-radius:2px;margin-top:6px;overflow:hidden;display:none}
-.fund-progress.active{display:block}
-.fund-progress-bar{height:100%;background:var(--blue);border-radius:2px;transition:width .3s;width:0}
 .fund-source-tag{font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle}
 .fund-source-api{background:rgba(52,168,83,0.15);color:#34a853}
 .fund-source-local{background:rgba(249,171,0,0.15);color:#f9ab00}
-.fund-update-btns{display:flex;gap:6px}
-.btn-status-update{background:rgba(249,171,0,0.12)!important;border-color:rgba(249,171,0,0.3)!important;color:#f9ab00!important}
+.fund-update-bar{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap;gap:4px}
 .gha-badge{font-size:10px;padding:2px 7px;border-radius:9999px;font-weight:600;background:rgba(107,114,128,0.15);color:var(--text-muted);white-space:nowrap}
 .gha-badge.active{background:rgba(52,168,83,0.15);color:#34a853}
 .token-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -454,188 +448,6 @@ function buildSentimentUI(){
   +(rec.length?'<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+eventsHtml+'</div></div>':'');
   $id('panelSentiment').innerHTML=html
 }
-
-function fetchFundRealtime(code){
-  return new Promise(function(resolve,reject){
-    var script=document.createElement('script');
-    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
-    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
-    window.jsonpgz=function(data){cleanup();resolve(data)};
-    script.src='https://fundgz.1234567.com.cn/js/'+code+'.js?rt='+Date.now();
-    script.onerror=function(){cleanup();reject(new Error('error'))};
-    document.head.appendChild(script)
-  })
-}
-
-function updateFundDataFromAPI(){
-  if(fundApiUpdating) return;
-  fundApiUpdating=true;
-  var codes=Object.keys(FUND_INFO);
-  var total=codes.length;
-  var done=0;
-  var ok=0;
-  var apiResults={};
-  var progressBar=$id('fundProgressBar');
-  var progressWrap=$id('fundProgress');
-  var btnUpdate=$id('btnFundUpdate');
-  if(progressWrap)progressWrap.classList.add('active');
-  if(btnUpdate)btnUpdate.disabled=true;
-  function updateProgress(){
-    var pct=Math.round(done/total*100);
-    if(progressBar)progressBar.style.width=pct+'%';
-    if(btnUpdate)btnUpdate.textContent=done+'/'+total
-  }
-  function next(){
-    if(done>=total){
-      fundApiUpdating=false;
-      fundApiTime=new Date();
-      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='在线更新'}
-      if(progressWrap)progressWrap.classList.remove('active');
-      if(progressBar)progressBar.style.width='0';
-      mergeApiData(apiResults,ok);
-      showToast('已更新 '+ok+'/'+total+' 只基金实时数据');
-      return
-    }
-    var code=codes[done];
-    fetchFundRealtime(code).then(function(data){
-      apiResults[data.fundcode]=data;
-      ok++;
-      done++;
-      updateProgress();
-      next()
-    }).catch(function(){
-      done++;
-      updateProgress();
-      next()
-    })
-  }
-  updateProgress();
-  next()
-}
-
-function updateTradeStatus(){
-  if(fundStatusUpdating||fundApiUpdating)return;
-  if(!fundData||fundData.length===0){showToast('请先更新基金数据');return}
-  fundStatusUpdating=true;
-  var codes=fundData.map(function(f){return f['基金代码']});
-  var progressBar=$id('fundProgressBar');
-  var progressWrap=$id('fundProgress');
-  var btnStatus=$id('btnStatusUpdate');
-  if(progressWrap)progressWrap.classList.add('active');
-  if(btnStatus){btnStatus.disabled=true;btnStatus.textContent='获取中...'}
-  if(progressBar)progressBar.style.width='20%';
-
-  var varName='_fundStatus_'+Date.now();
-  var script=document.createElement('script');
-  var done=false;
-  var timeout=setTimeout(function(){
-    if(done)return;done=true;
-    cleanup();fundStatusUpdating=false;
-    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
-    if(progressWrap)progressWrap.classList.remove('active');
-    showToast('获取交易状态超时，请重试')
-  },90000);
-  function cleanup(){
-    clearTimeout(timeout);
-    try{delete window[varName]}catch(e){}
-    if(script.parentNode)script.parentNode.removeChild(script)
-  }
-  script.onload=function(){
-    if(done)return;done=true;
-    var data=window[varName];
-    cleanup();
-    if(!data||!data.datas){fundStatusUpdating=false;if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}if(progressWrap)progressWrap.classList.remove('active');showToast('获取交易状态失败');return}
-    var ok=0;
-    var codeSet={};
-    for(var i=0;i<codes.length;i++){codeSet[codes[i]]=true}
-    for(var j=0;j<data.datas.length;j++){
-      var item=data.datas[j];
-      var code=item[0];
-      if(codeSet[code]){
-        var sgzt=item[5]||'';
-        var shzt=item[6]||'';
-        var limitAmt=item[9]||'';
-        var statusText=sgzt;
-        if(shzt&&shzt!==sgzt)statusText+='，'+shzt;
-        if(limitAmt&&limitAmt!=='0'&&limitAmt!=='100000000000'&&sgzt.indexOf('暂停')<0){
-          var amt=parseFloat(limitAmt);
-          if(amt>0){
-            var amtStr=amt>=10000?(amt/10000)+'万':amt+'元';
-            statusText+='(限'+amtStr+')'
-          }
-        }
-        for(var k=0;k<fundData.length;k++){
-          if(fundData[k]['基金代码']===code){
-            fundData[k]['交易状态']=statusText;
-            fundData[k]['申购状态']=sgzt;
-            fundData[k]['赎回状态']=shzt;
-            if(limitAmt&&limitAmt!=='0')fundData[k]['日累计限定金额']=limitAmt;
-            ok++;break
-          }
-        }
-      }
-    }
-    fundStatusUpdating=false;
-    fundStatusTime=new Date();
-    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
-    if(progressWrap)progressWrap.classList.remove('active');
-    if(progressBar)progressBar.style.width='0';
-    buildRestrictionUI();
-    showToast('已更新 '+ok+'/'+codes.length+' 只基金交易状态')
-  };
-  script.src='https://fund.eastmoney.com/Data/Fund_JJJZ_Data.aspx?t=8&page=1,30000&px=z&sc=z&st=desc&sd=&ed=&js='+varName;
-  script.onerror=function(){
-    if(done)return;done=true;
-    cleanup();fundStatusUpdating=false;
-    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
-    if(progressWrap)progressWrap.classList.remove('active');
-    showToast('获取交易状态失败，请检查网络')
-  };
-  document.head.appendChild(script)
-}
-
-function mergeApiData(apiResults,okCount){
-  if(fundData.length>0){
-    for(var i=0;i<fundData.length;i++){
-      var f=fundData[i];
-      var api=apiResults[f['基金代码']];
-      if(api){
-        f['最新净值']=api.dwjz;
-        f['日涨跌幅']=api.gszzl+'%';
-        f['净值日期']=api.gztime||api.jzrq;
-        f._apiSource=true
-      }
-    }
-  }else{
-    var codes=Object.keys(FUND_INFO);
-    fundData=[];
-    for(var i=0;i<codes.length;i++){
-      var code=codes[i];
-      var info=FUND_INFO[code];
-      var api=apiResults[code];
-      fundData.push({
-        "基金代码":code,
-        "基金名称":info.name,
-        "类型":info.type,
-        "最新净值":api?api.dwjz:"N/A",
-        "日涨跌幅":api?api.gszzl+"%":"N/A",
-        "净值日期":api?(api.gztime||api.jzrq):"N/A",
-        "交易状态":"N/A",
-        "购买手续费":info.purchase,
-        "管理费率":info.management,
-        "托管费率":info.custody,
-        "销售服务费":info.sales,
-        "合计费率":info.total,
-        "近1年":"N/A",
-        "链接":"https://fund.eastmoney.com/"+code+".html",
-        "分类":info.category,
-        _apiSource:!!api
-      })
-    }
-  }
-  buildRestrictionUI()
-}
-
 function loadFundData(){
   fetchJSON(FUND_URL).then(function(data){
     fundData = data;
@@ -696,8 +508,8 @@ function formatBuyableAmount(total){
 
 function buildRestrictionUI(){
   if(!fundData||fundData.length===0){
-    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据，点击右侧从API获取</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
-    $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
+    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">数据由 GitHub Actions 自动更新</span></div>';
+    $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="switchTab(\"restriction\")">刷新数据</button></div>';return
   }
   var nasdaq=[],sp500=[];
   for(var i=0;i<fundData.length;i++){
@@ -741,8 +553,7 @@ function buildRestrictionUI(){
   }
   var statusInfo=fundStatusTime?'状态 '+fundStatusTime.getHours()+':'+String(fundStatusTime.getMinutes()).padStart(2,'0'):'';
   var html=''
-    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+(statusInfo?' | '+statusInfo:'')+'</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button><button class="btn-fund-update btn-status-update" id="btnStatusUpdate" onclick="updateTradeStatus()">更新状态</button></div></div>'
-    +'<div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>'
+    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+(statusInfo?' | '+statusInfo:'')+' | 交易状态和近1年数据由GHA自动更新</span></div>'
     +'<div class="fund-group-title">纳斯达克100<span class="fund-group-count">'+nasdaq.length+'只基金</span></div>'
     +renderGroup('纳斯达克100',nasdaq)
     +'<div class="fund-group-title" style="margin-top:16px">标普500<span class="fund-group-count">'+sp500.length+'只基金</span></div>'

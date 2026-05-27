@@ -400,7 +400,7 @@ FUND_LIST = [
 
 
 def fetch_fund_page_status(code):
-    """从天天基金网单个基金页面抓取申购状态"""
+    """从天天基金网单个基金页面抓取申购状态和近1年收益率"""
     url = f"https://fund.eastmoney.com/{code}.html"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -425,7 +425,6 @@ def fetch_fund_page_status(code):
             raw = re.sub(r'<[^>]+>', '', raw).strip()
             status_text = raw
         else:
-            # 回退：找 申购状态
             m = re.search(
                 r'申购状态[：:]\s*(.+?)(?:<|$)',
                 html, re.DOTALL
@@ -436,7 +435,7 @@ def fetch_fund_page_status(code):
                 status_text = raw
 
         if not status_text:
-            return None, None
+            return None, None, None
 
         # 提取限购额度
         lm = re.search(r'单日累计购买上限[：:]?\s*([^<\n\r]+?)(?:<|\n|\r|$)', html)
@@ -447,10 +446,26 @@ def fetch_fund_page_status(code):
         if limit_raw:
             full_status = f"{status_text} (单日累计购买上限{limit_raw})"
 
-        return status_text, full_status
+        # 提取近1年收益率
+        return_1y = None
+        # 尝试多种匹配模式
+        patterns = [
+            r'<span>近1年[：:]\s*</span><span[^>]*>([-+]?\d+\.\d+%)</span>',
+            r'<span>近1年</span>\s*<span[^>]*>([-+]?\d+\.\d+%)</span>',
+            r'<span>近1年[：:]?\s*</span>\s*<span[^>]*>([-+]?\d+\.\d+%)</span>',
+            r'近1年[：:]\s*([-+]?\d+\.\d+%)',
+            r'近1年</span>\s*<span[^>]*>([-+]?\d+\.\d+%)</span>',
+        ]
+        for pat in patterns:
+            m = re.search(pat, html)
+            if m:
+                return_1y = m.group(1)
+                break
+
+        return status_text, full_status, return_1y
     except Exception as e:
         print(f"    [FAIL] {code}: {e}")
-        return None, None
+        return None, None, None
 
 def load_existing_fund_data():
     """读取现有的基金数据文件"""
@@ -548,14 +563,20 @@ def update_fund_status():
     updated = 0
     for i, (code, category) in enumerate(FUND_LIST, 1):
         print(f"  [{i}/{total}] {code}...", end="")
-        status_simple, full_status = fetch_fund_page_status(code)
+        status_simple, full_status, return_1y = fetch_fund_page_status(code)
 
         if code in code_to_item:
             item = code_to_item[code]
+            changed = []
             if full_status:
                 item["交易状态"] = full_status
+                changed.append("状态")
+            if return_1y:
+                item["近1年"] = return_1y
+                changed.append(f"近1年={return_1y}")
+            if changed:
                 updated += 1
-                print(f" {status_simple}")
+                print(f" {', '.join(changed)}")
             else:
                 print(" 无变化")
             # 确保基金名称完整
