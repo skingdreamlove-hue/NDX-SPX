@@ -219,10 +219,7 @@ body{
   <div class="header-right">
     <span class="header-update" id="updateTime">加载中...</span>
     <span class="gha-badge" id="ghaBadge" onclick="openTokenDialog()" style="cursor:pointer">自动更新</span>
-    <button class="btn-refresh" id="btnGHATrigger" onclick="triggerGHAUpdate()" aria-label="GHA更新" title="触发GitHub Actions更新">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    </button>
-    <button class="btn-refresh" id="btnRefresh" onclick="refreshAll()" aria-label="刷新">
+    <button class="btn-refresh" id="btnRefresh" onclick="smartUpdate()" aria-label="更新数据">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
   </div>
@@ -760,13 +757,18 @@ function saveToken(){var v=$id('tokenInput').value.trim();if(!v)return;setToken(
 function deleteToken(){clearToken();closeTokenDialog();showToast('Token 已清除')}
 function triggerGHAUpdate(){
   if(!GH_TOKEN){showToast('请先设置 Token');openTokenDialog();return}
-  if($id('btnGHATrigger').classList.contains('spinning'))return;
-  var btn=$id('btnGHATrigger');btn.classList.add('spinning');
+  if($id('btnRefresh').classList.contains('spinning'))return;
+  var btn=$id('btnRefresh');btn.classList.add('spinning');
   showToast('正在触发 GitHub Actions...');
   triggerGHA().then(function(r){if(r.status===401||r.status===403)throw Error('Token 无效，请重新设置');if(!r.ok&&r.status!==204)throw Error('HTTP '+r.status+' 触发失败');showToast('GHA 已触发，等待完成...');return waitForGHA()})
   .then(function(){showToast('更新完成');return refreshAll()})
   .catch(function(e){showToast(e.message);console.error(e)})
     .finally(function(){btn.classList.remove('spinning')})
+}
+
+function smartUpdate(){
+  if(GH_TOKEN){triggerGHAUpdate();return}
+  refreshAll()
 }
 
 function refreshAll(){
