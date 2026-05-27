@@ -179,24 +179,58 @@ def main():
 
     last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 尝试加载 daily_log.json 保留历史记录
-    recent_signals = []
+    # ── 先保存 daily_log.json ──
+    today_str = datetime.now().strftime("%Y-%m-%d")
     daily_log_path = BASE_DIR / "daily_log.json"
+    existing_logs = []
     if daily_log_path.exists():
         try:
             with open(daily_log_path, "r", encoding="utf-8") as f:
-                daily_log = json.load(f)
-            if isinstance(daily_log, list):
-                for entry in daily_log[-10:]:
-                    signal = entry.get("signal", {})
-                    recent_signals.append({
-                        "date": entry.get("date", ""),
-                        "emotion": signal.get("emotion", ""),
-                        "position": signal.get("target_position", ""),
-                        "action": signal.get("action", ""),
-                    })
+                existing_logs = json.load(f)
         except Exception:
             pass
+    if not isinstance(existing_logs, list):
+        existing_logs = []
+    entry_exists = existing_logs and existing_logs[-1].get("date") == today_str
+    daily_log_entry = {
+        "date": today_str,
+        "market_data": {
+            "ndx": ndx_price, "spx": spx_price,
+            "ndx_drawdown": ndx_drawdown, "spx_drawdown": spx_drawdown,
+            "ndx_deviation_ma200": ndx_dev_ma200, "spx_deviation_ma200": spx_dev_ma200,
+            "vix": vix, "vix_term": vix_term, "vix_term_days": 0,
+            "rate_shock": is_rate_shock,
+            "ndx_spx_deviation": ndx_spx_ratio, "iwm_spy_deviation": iwm_spy_ratio,
+        },
+        "signal": {
+            "emotion": emotion, "strength": strength,
+            "triggered_conditions": [],
+            "target_position": "{}%".format(target_pos), "action": pos_advice,
+        },
+    }
+    if not entry_exists:
+        existing_logs.append(daily_log_entry)
+        with open(daily_log_path, "w", encoding="utf-8") as f:
+            json.dump(existing_logs, f, ensure_ascii=False, indent=2)
+        print("  [OK] daily_log.json 新增 {}".format(today_str))
+    else:
+        print("  [-] daily_log.json {} 已存在".format(today_str))
+
+    # ── 构建 recent_signals（包含今天的数据）──
+    recent_signals = []
+    try:
+        with open(daily_log_path, "r", encoding="utf-8") as f:
+            updated_logs = json.load(f)
+        for entry in updated_logs[-10:]:
+            signal = entry.get("signal", {})
+            recent_signals.append({
+                "date": entry.get("date", ""),
+                "emotion": signal.get("emotion", ""),
+                "position": signal.get("target_position", ""),
+                "action": signal.get("action", ""),
+            })
+    except Exception:
+        pass
 
     indicators = {
         "current_vix": vix,
@@ -313,41 +347,6 @@ def main():
     with open(mobile_path, "w", encoding="utf-8") as f:
         json.dump(mobile_data, f, ensure_ascii=False, indent=2)
     print(f"  [OK] {mobile_path}")
-
-    # ── 保存 daily_log.json 追加今日信号 ──
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    daily_log_entry = {
-        "date": today_str,
-        "market_data": {
-            "ndx": ndx_price, "spx": spx_price,
-            "ndx_drawdown": ndx_drawdown, "spx_drawdown": spx_drawdown,
-            "ndx_deviation_ma200": ndx_dev_ma200, "spx_deviation_ma200": spx_dev_ma200,
-            "vix": vix, "vix_term": vix_term, "vix_term_days": 0,
-            "rate_shock": is_rate_shock,
-            "ndx_spx_deviation": ndx_spx_ratio, "iwm_spy_deviation": iwm_spy_ratio,
-        },
-        "signal": {
-            "emotion": emotion, "strength": strength,
-            "triggered_conditions": [],
-            "target_position": f"{target_pos}%", "action": pos_advice,
-        },
-    }
-    existing_logs = []
-    if daily_log_path.exists():
-        try:
-            with open(daily_log_path, "r", encoding="utf-8") as f:
-                existing_logs = json.load(f)
-        except Exception:
-            pass
-    if not isinstance(existing_logs, list):
-        existing_logs = []
-    if not existing_logs or existing_logs[-1].get("date") != today_str:
-        existing_logs.append(daily_log_entry)
-        with open(daily_log_path, "w", encoding="utf-8") as f:
-            json.dump(existing_logs, f, ensure_ascii=False, indent=2)
-        print(f"  [OK] daily_log.json (新增 {today_str})")
-    else:
-        print(f"  [-] daily_log.json {today_str} 已存在，跳过")
 
     # ── 同步 root real_fund_data.json ──
     fund_src = FUND_STATUS_FILE
