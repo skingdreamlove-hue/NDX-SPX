@@ -472,7 +472,7 @@ function getFundBadge(statusText){
   if(statusText.indexOf('暂停申购')>=0){
     var cls='fund-badge-danger';
     if(limit!=null){if(limit<100)cls='fund-badge-danger';else if(limit<1000)cls='fund-badge-warn';else cls='fund-badge-info'}
-    return '<div class="fund-badge-row"><span class="fund-badge '+cls+'">暂停申购</span>'+(limit!=null?'<span class="fund-limit-tag">上限 '+limit.toLocaleString()+' 元</span>':'')+'</div>'
+    return '<div class="fund-badge-row"><span class="fund-badge '+cls+'">暂停申购</span></div>'
   }
   if(statusText.indexOf('限大额')>=0||statusText.indexOf('限购')>=0){
     var cls2='fund-badge-warn';
