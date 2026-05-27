@@ -164,9 +164,11 @@ body{
 .fund-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
 .fund-name{font-size:13px;font-weight:600;line-height:1.4;flex:1;min-width:0;padding-right:8px}
 .fund-code{font-size:10px;color:var(--text-muted);font-family:monospace}
+.fund-badge-row{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.fund-limit-tag{font-size:10px;color:var(--text-muted);white-space:nowrap}
 .fund-badge{
   display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;
-  font-weight:600;white-space:nowrap;flex-shrink:0
+  font-weight:600;white-space:nowrap
 }
 .fund-badge-danger{background:rgba(234,67,53,0.15);color:#ef4444}
 .fund-badge-warn{background:rgba(249,171,0,0.15);color:#f59e0b}
@@ -175,7 +177,6 @@ body{
 .fund-card-meta{display:flex;gap:12px;font-size:11px;color:var(--text-secondary)}
 .fund-meta-item{display:flex;flex-direction:column}
 .fund-meta-label{color:var(--text-muted);font-size:9px}
-.purchase-limit{font-size:12px;font-weight:600;color:var(--text-primary);margin-top:4px;padding-top:4px;border-top:1px solid var(--border-card)}
 .fund-summary{
   background:var(--bg-card);border:1px solid var(--border-card);
   border-radius:10px;padding:10px 14px;margin-bottom:10px;
@@ -469,11 +470,16 @@ function getFundBadge(statusText){
   if(!statusText||statusText==='N/A') return '<span class="fund-badge fund-badge-info">未知</span>';
   var limit=parseLimit(statusText);
   if(statusText.indexOf('暂停申购')>=0){
-    var cls='fund-badge-danger',label='暂停申购';
+    var cls='fund-badge-danger';
     if(limit!=null){if(limit<100)cls='fund-badge-danger';else if(limit<1000)cls='fund-badge-warn';else cls='fund-badge-info'}
+    return '<div class="fund-badge-row"><span class="fund-badge '+cls+'">暂停申购</span>'+(limit!=null?'<span class="fund-limit-tag">上限 '+limit.toLocaleString()+' 元</span>':'')+'</div>'
+  }
+  if(statusText.indexOf('限大额')>=0||statusText.indexOf('限购')>=0){
+    var cls2='fund-badge-warn';
+    if(limit!=null){if(limit<100)cls2='fund-badge-danger';else if(limit<1000)cls2='fund-badge-warn';else cls2='fund-badge-ok'}
     var m=statusText.match(/\(单日累计购买上限([\d.]+(?:万)?元)\)/);
-    if(m)label='限购 '+m[1]
-    return '<span class="fund-badge '+cls+'">'+label+'</span>'
+    var limitLabel=m?m[1]:'';
+    return '<div class="fund-badge-row"><span class="fund-badge '+cls2+'">限购</span>'+(limitLabel?'<span class="fund-limit-tag">'+limitLabel+'</span>':'')+'</div>'
   }
   if(statusText.indexOf('正常')>=0||statusText.indexOf('开放')>=0) return '<span class="fund-badge fund-badge-ok">可申购</span>'
   return '<span class="fund-badge fund-badge-info">'+statusText+'</span>'
@@ -546,7 +552,6 @@ function buildRestrictionUI(){
           +'<div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div>'
           +'<div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div>'
         +'</div>'
-        +(limit!=null&&limit>0?'<div class="purchase-limit">每日上限: <strong>'+limit.toLocaleString()+'元</strong></div>':'')
       +'</div>';
     }
     return h
