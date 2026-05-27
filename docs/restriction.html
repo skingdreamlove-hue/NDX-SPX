@@ -347,7 +347,7 @@
                     '<div class="fund-header"><span class="fund-name">' + f['基金名称'] + '</span><span class="fund-code">' + f['基金代码'] + '</span></div>' +
                     '<div class="fund-body">' +
                         '<span class="status-badge ' + si.cls + '">' + si.text + '</span>' +
-                        (si.limit !== null ? '<span class="limit-tag" style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:' + (si.cls==='danger'?'rgba(239,68,68,0.15)':si.cls==='warning'?'rgba(245,158,11,0.15)':'rgba(16,185,129,0.15)') + ';">' + formatLimit(si.limit) + '</span>' : '') +
+                        (si.limit !== null && si.text !== '暂停申购' ? '<span class="limit-tag" style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:' + (si.cls==='danger'?'rgba(239,68,68,0.15)':si.cls==='warning'?'rgba(245,158,11,0.15)':'rgba(16,185,129,0.15)') + ';">' + formatLimit(si.limit) + '</span>' : '') +
                         '<span class="type-pill ' + (f['类型'] === 'C' ? 'c' : 'a') + '">' + (f['类型'] || 'A') + '类</span>' +
                     '</div>' +
                     '<div class="fund-meta" style="margin-top:6px;">' +
