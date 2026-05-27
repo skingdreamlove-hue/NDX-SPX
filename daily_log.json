@@ -97,12 +97,12 @@
       "divergence": "同步运行"
     },
     "verify_20d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 9.87,
+      "spx_return": 4.81,
+      "weighted_return": 8.35,
+      "result": "wrong",
+      "divergence": "科技领涨"
     },
     "verify_10d": {
       "status": "verified",
@@ -154,12 +154,12 @@
       "divergence": "同步运行"
     },
     "verify_20d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 10.8,
+      "spx_return": 5.28,
+      "weighted_return": 9.15,
+      "result": "wrong",
+      "divergence": "科技领涨"
     },
     "verify_10d": {
       "status": "verified",
@@ -667,12 +667,12 @@
       "divergence": "同步运行"
     },
     "verify_10d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 2.32,
+      "spx_return": 1.43,
+      "weighted_return": 2.06,
+      "result": "correct",
+      "divergence": "同步运行"
     },
     "verify_20d": {
       "status": "pending",
@@ -724,12 +724,12 @@
       "divergence": "同步运行"
     },
     "verify_10d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 3.04,
+      "spx_return": 1.55,
+      "weighted_return": 2.59,
+      "result": "correct",
+      "divergence": "同步运行"
     },
     "verify_20d": {
       "status": "pending",
@@ -944,12 +944,12 @@
       "action": "持有"
     },
     "verify_5d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 3.47,
+      "spx_return": 1.57,
+      "weighted_return": 2.9,
+      "result": "correct",
+      "divergence": "同步运行"
     },
     "verify_10d": {
       "status": "pending",
@@ -1001,12 +1001,12 @@
       "action": "持有"
     },
     "verify_5d": {
-      "status": "pending",
-      "ndx_return": null,
-      "spx_return": null,
-      "weighted_return": null,
-      "result": null,
-      "divergence": null
+      "status": "verified",
+      "ndx_return": 3.92,
+      "spx_return": 2.21,
+      "weighted_return": 3.41,
+      "result": "correct",
+      "divergence": "同步运行"
     },
     "verify_10d": {
       "status": "pending",
@@ -1106,6 +1106,120 @@
       "on_rrp_deviation": -18.92,
       "ndx_spx_deviation": 1.36,
       "iwm_spy_deviation": -1.03
+    },
+    "signal": {
+      "emotion": "中性",
+      "strength": "★ 弱",
+      "triggered_conditions": [],
+      "target_position": "100%",
+      "action": "持有"
+    },
+    "verify_5d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    },
+    "verify_10d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    },
+    "verify_20d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    }
+  },
+  {
+    "date": "2026-05-22",
+    "market_data": {
+      "ndx": 29481.640625,
+      "spx": 7473.47021484375,
+      "ndx_drawdown": -0.61,
+      "spx_drawdown": -0.44,
+      "ndx_above_ma200": 57.42,
+      "spx_above_ma200": 52.88,
+      "ndx_deviation_ma200": 16.72,
+      "spx_deviation_ma200": 9.78,
+      "vix": 16.700000762939453,
+      "vix_term": 0.84,
+      "vix_term_days": 0,
+      "credit_spread": 2.8,
+      "rate_shock": false,
+      "aaii_valid": false,
+      "qqq_oi_ratio": 1.67,
+      "qqq_oi_deviation": 5.0,
+      "spy_oi_ratio": 2.23,
+      "spy_oi_deviation": -1.8,
+      "on_rrp_deviation": -18.92,
+      "ndx_spx_deviation": 1.36,
+      "iwm_spy_deviation": -1.03
+    },
+    "signal": {
+      "emotion": "中性",
+      "strength": "★ 弱",
+      "triggered_conditions": [],
+      "target_position": "100%",
+      "action": "持有"
+    },
+    "verify_5d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    },
+    "verify_10d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    },
+    "verify_20d": {
+      "status": "pending",
+      "ndx_return": null,
+      "spx_return": null,
+      "weighted_return": null,
+      "result": null,
+      "divergence": null
+    }
+  },
+  {
+    "date": "2026-05-26",
+    "market_data": {
+      "ndx": 29866.86,
+      "spx": 7506.45,
+      "ndx_drawdown": -0.59,
+      "spx_drawdown": -0.43,
+      "ndx_above_ma200": 58.41,
+      "spx_above_ma200": 57.37,
+      "ndx_deviation_ma200": 18.09,
+      "spx_deviation_ma200": 10.17,
+      "vix": 17.09,
+      "vix_term": 0.86,
+      "vix_term_days": 0,
+      "credit_spread": 2.74,
+      "rate_shock": false,
+      "aaii_valid": false,
+      "qqq_oi_ratio": 1.65,
+      "qqq_oi_deviation": 3.8,
+      "spy_oi_ratio": 2.23,
+      "spy_oi_deviation": -1.8,
+      "on_rrp_deviation": 14.7,
+      "ndx_spx_deviation": 2.01,
+      "iwm_spy_deviation": 0.78
     },
     "signal": {
       "emotion": "中性",

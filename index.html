@@ -92,6 +92,20 @@
             color: var(--text-secondary);
             white-space: nowrap;
         }
+        .mode-badge {
+            font-size: 10px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;
+        }
+        .mode-badge.server { background: #DCFCE7; color: #166534; }
+        .mode-badge.static { background: #F3F4F6; color: #6B7280; }
+        @media (prefers-color-scheme: dark) {
+            .mode-badge.server { background: rgba(22,101,52,0.3); color: #86EFAC; }
+            .mode-badge.static { background: rgba(107,114,128,0.3); color: #9CA3AF; }
+        }
+        .server-input {
+            padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px;
+            font-size: 12px; background: var(--bg-card); color: var(--text-primary); outline: none; width: 220px;
+        }
+        .server-input:focus { border-color: #3B82F6; }
         .update-btn {
             background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
             color: white;
@@ -488,6 +502,20 @@
             to { transform: rotate(360deg); }
         }
 
+        .sentiment-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+        }
+        .sentiment-tag[data-sentiment="极度恐慌"] { background: linear-gradient(135deg, #991B1B 0%, #DC2626 100%); }
+        .sentiment-tag[data-sentiment="恐慌"] { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+        .sentiment-tag[data-sentiment="中性"] { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); }
+        .sentiment-tag[data-sentiment="贪婪"] { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+        .sentiment-tag[data-sentiment="极度贪婪"] { background: linear-gradient(135deg, #15803D 0%, #16A34A 100%); }
+
         .toast-container {
             position: fixed;
             top: 24px;
@@ -545,6 +573,7 @@
                     <button id="btn-restriction" class="backtest-btn" onclick="openRestrictionPage()" aria-label="限购查询"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> 限购查询</button>
                     <button id="btn-backtest" class="backtest-btn" onclick="openBacktestPage()" aria-label="历史回测"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 历史回测</button>
                     <a href="review.html" class="switch-btn" aria-label="复盘进化">复盘进化</a>
+                    <button onclick="toggleTokenInput()" class="switch-btn" style="background:linear-gradient(135deg,#6B7280 0%,#9CA3AF 100%);font-size:16px;padding:6px 12px;height:40px;" aria-label="Token 设置">🔑</button>
                     <button id="updateBtn" onclick="updateData()" class="update-btn" aria-label="更新数据">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.5 2v6h-6"></path>
@@ -555,12 +584,20 @@
                         更新数据
                     </button>
                 </div>
-                <div class="update-info" id="updateTime" role="status">最后更新: -</div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span class="update-info" id="updateTime" role="status">最后更新: -</span>
+                    <span class="mode-badge static" id="modeBadge">自动更新</span>
+                </div>
+                <div id="tokenSettings" style="display:none;margin-top:6px;">
+                    <input class="server-input" id="tokenInput" type="password" placeholder="GitHub Token (ghp_...)" value="">
+                    <button class="update-btn" style="padding:4px 12px;font-size:12px;height:auto;" onclick="saveToken()">保存</button>
+                    <button class="backtest-btn" style="padding:4px 12px;font-size:12px;height:auto;" onclick="clearToken()">清除</button>
+                </div>
             </div>
         </div>
 
         <div class="update-tip" id="updateTip" role="status">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg> 更新数据方法：双击项目目录中的 <strong>update_data.bat</strong> 文件，等待数据抓取完成后刷新本页面即可。
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg> 数据由 GitHub Actions 在每个美股交易时段自动更新。点击「更新数据」可刷新页面显示最新数据。
         </div>
 
         <div class="banner-card">
@@ -746,6 +783,27 @@
             </div>
         </div>
 
+        <div class="chart-container">
+            <h3 class="chart-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> 近期情绪信号</h3>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--border-color);">
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">日期</th>
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">情绪</th>
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">信号强度</th>
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">操作建议</th>
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">5日验证</th>
+                            <th style="padding:8px 6px;text-align:center;color:var(--text-tertiary);font-weight:600;">准确率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalHistoryBody">
+                        <tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-tertiary);">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="explain-section">
             <h3 class="explain-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> 指标说明</h3>
             <div class="explain-grid">
@@ -791,6 +849,84 @@
         var SVG_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
         var SVG_REFRESH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"></path><path d="M2.5 22v-6h6"></path><path d="M21.5 13a9 9 0 0 0-18 0"></path><path d="M2.5 11a9 9 0 0 1 18 0"></path></svg>';
 
+        // GitHub Token 配置
+        var GH_OWNER = 'skingdreamlove-hue';
+        var GH_REPO = 'NDX-SPX';
+        var GH_BRANCH = 'master';
+        var GH_TOKEN = localStorage.getItem('github_token') || '';
+
+        function ghHeaders() {
+            var h = { 'Accept': 'application/vnd.github+json' };
+            if (GH_TOKEN) h['Authorization'] = 'Bearer ' + GH_TOKEN;
+            return h;
+        }
+        function fetchRawFile(path) {
+            var url = 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + path + '?t=' + Date.now();
+            var opts = {};
+            if (GH_TOKEN) opts.headers = { 'Authorization': 'Bearer ' + GH_TOKEN };
+            return fetch(url, opts).then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+        }
+        function triggerGHA() {
+            var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/actions/workflows/auto_update.yml/dispatches';
+            return fetch(url, {
+                method: 'POST',
+                headers: ghHeaders(),
+                body: JSON.stringify({ ref: GH_BRANCH })
+            });
+        }
+        function waitForGHA() {
+            return new Promise(function(resolve, reject) {
+                var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/actions/runs?event=workflow_dispatch&branch=' + GH_BRANCH + '&per_page=1';
+                var start = Date.now();
+                var knownRunId = null;
+                var iv = setInterval(function() {
+                    if (Date.now() - start > 180000) { clearInterval(iv); reject(new Error('超时')); return; }
+                    var opts = { headers: ghHeaders() };
+                    fetch(url, opts).then(function(r) { return r.json(); }).then(function(data) {
+                        var runs = data.workflow_runs || [];
+                        if (runs.length === 0) return;
+                        var run = runs[0];
+                        if (!knownRunId) knownRunId = run.id;
+                        if (run.id === knownRunId && run.status === 'completed') {
+                            clearInterval(iv);
+                            if (run.conclusion === 'success') resolve();
+                            else reject(new Error('GHA 失败: ' + run.conclusion));
+                        }
+                    }).catch(function() {});
+                }, 5000);
+            });
+        }
+
+        function toggleTokenInput() {
+            var el = document.getElementById('tokenSettings');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('tokenInput').value = GH_TOKEN;
+        }
+        function saveToken() {
+            var v = document.getElementById('tokenInput').value.trim();
+            if (!v) { showToast('请输入 Token', 'error'); return; }
+            localStorage.setItem('github_token', v);
+            GH_TOKEN = v;
+            updateModeBadge();
+            showToast('Token 已保存', 'success');
+            document.getElementById('tokenSettings').style.display = 'none';
+        }
+        function clearToken() {
+            localStorage.removeItem('github_token');
+            GH_TOKEN = '';
+            updateModeBadge();
+            showToast('已清除 Token', 'success');
+            document.getElementById('tokenSettings').style.display = 'none';
+        }
+        function updateModeBadge() {
+            var el = document.getElementById('modeBadge');
+            if (GH_TOKEN) { el.textContent = 'Token已设置'; el.className = 'mode-badge live'; }
+            else { el.textContent = '自动更新'; el.className = 'mode-badge static'; }
+        }
+
         function showToast(message, type) {
             var container = document.getElementById('toast-container');
             var toast = document.createElement('div');
@@ -805,44 +941,89 @@
         }
 
         window.onload = function() {
+            updateModeBadge();
             loadMarketData();
+            loadSignalHistory();
         }
 
         function loadMarketData() {
+            if (GH_TOKEN) {
+                // 用 .json 版本（纯 JSON 格式）
+                fetchRawFile('market_data.json').then(function(data) {
+                    if (data && typeof data === 'object') updateDisplay(data);
+                }).catch(function() {
+                    fallbackMarketData();
+                });
+            } else {
+                fallbackMarketData();
+            }
+        }
+
+        function fallbackMarketData() {
+            // Electron: 通过 IPC 获取最新数据
             if (window.electronAPI && window.electronAPI.loadMarketData) {
                 window.electronAPI.loadMarketData()
                     .then(function(result) {
                         if (result.success && result.data) {
                             updateDisplay(result.data);
-                        } else {
-                            if (typeof MARKET_DATA !== 'undefined') {
-                                updateDisplay(MARKET_DATA);
-                            }
+                        } else if (typeof MARKET_DATA !== 'undefined') {
+                            updateDisplay(MARKET_DATA);
                         }
                     })
-                    .catch(function(error) {
-                        console.error('Electron加载数据失败:', error);
+                    .catch(function() {
                         if (typeof MARKET_DATA !== 'undefined') {
                             updateDisplay(MARKET_DATA);
                         }
                     });
-            } else {
-                fetch('market_data.js?t=' + new Date().getTime())
-                    .then(function(response) { return response.text(); })
-                    .then(function(text) {
-                        var match = text.match(/var MARKET_DATA = ({.*});/s);
-                        if (match) {
-                            var data = JSON.parse(match[1]);
-                            updateDisplay(data);
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('加载数据失败:', error);
-                        if (typeof MARKET_DATA !== 'undefined') {
-                            updateDisplay(MARKET_DATA);
-                        }
-                    });
+            } else if (typeof MARKET_DATA !== 'undefined') {
+                // 浏览器/GitHub Pages: 直接使用 <script> 加载的 MARKET_DATA
+                updateDisplay(MARKET_DATA);
             }
+        }
+
+        function loadSignalHistory() {
+            var fetchPromise;
+            if (GH_TOKEN) {
+                fetchPromise = fetchRawFile('daily_log.json');
+            } else {
+                fetchPromise = fetch('daily_log.json?t=' + Date.now()).then(function(r) { return r.json(); });
+            }
+            fetchPromise.then(function(logs) {
+                    var tbody = document.getElementById('signalHistoryBody');
+                    if (!logs || logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-tertiary);">暂无信号数据</td></tr>';
+                        return;
+                    }
+                    var html = '';
+                    var recent = logs.slice(-20).reverse();
+                    recent.forEach(function(entry) {
+                        var date = entry['date'] || '-';
+                        var signal = entry['signal'] || {};
+                        var emotion = signal['emotion'] || '-';
+                        var verify5d = entry['verify_5d'] || {};
+                        var v5Result = verify5d['result'] || '-';
+                        if (v5Result === 'correct') v5Result = '正确';
+                        else if (v5Result === 'wrong') v5Result = '误判';
+                        else if (v5Result === 'pending') v5Result = '待验证';
+                        var verify20d = entry['verify_20d'] || {};
+                        var v20Result = verify20d['result'] || '-';
+                        if (v20Result === 'correct') v20Result = '正确';
+                        else if (v20Result === 'wrong') v20Result = '误判';
+                        else if (v20Result === 'pending') v20Result = '待验证';
+                        html += '<tr style="border-bottom:1px solid var(--border-color);">' +
+                            '<td style="padding:8px 6px;text-align:center;font-size:12px;">' + date + '</td>' +
+                            '<td style="padding:8px 6px;text-align:center;"><span class="sentiment-tag" data-sentiment="' + emotion + '">' + emotion + '</span></td>' +
+                            '<td style="padding:8px 6px;text-align:center;font-size:12px;color:var(--text-secondary);">' + (signal['strength'] || '普通') + '</td>' +
+                            '<td style="padding:8px 6px;text-align:center;font-size:12px;color:var(--text-secondary);">' + (signal['action'] || '-') + '</td>' +
+                            '<td style="padding:8px 6px;text-align:center;font-size:12px;color:var(--text-secondary);">' + v5Result + '</td>' +
+                            '<td style="padding:8px 6px;text-align:center;font-size:12px;color:var(--text-secondary);">' + v20Result + '</td>' +
+                        '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                })
+                .catch(function() {
+                    document.getElementById('signalHistoryBody').innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-tertiary);">加载信号历史失败</td></tr>';
+                });
         }
 
         function updateDisplay(data) {
@@ -1075,12 +1256,50 @@
             var btn = document.getElementById('updateBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> 更新中...';
+            var t = document.getElementById('updateTime');
 
-            if (window.electronAPI) {
+            if (GH_TOKEN) {
+                // Token 模式：触发 GHA → 等待 → 拉取最新数据
+                t.textContent = '正在触发 GitHub Actions...';
+                t.style.color = '#F59E0B';
+
+                triggerGHA().then(function(resp) {
+                    if (!resp.ok && resp.status !== 204) throw new Error('触发失败 (HTTP ' + resp.status + ')');
+                    t.textContent = 'GHA 已触发，等待爬取完成...';
+                    showToast('正在通过 GitHub Actions 更新数据，约需 1-3 分钟', 'info');
+                    return waitForGHA();
+                })
+                .then(function() {
+                    t.textContent = 'GHA 完成，加载最新数据...';
+                    t.style.color = '#10B981';
+                    return Promise.all([
+                        fetchRawFile('market_data.json').then(function(d) { if (d && typeof d === 'object') updateDisplay(d); }).catch(function() {}),
+                        loadSignalHistory(),
+                    ]);
+                })
+                .then(function() {
+                    t.textContent = '实时更新成功 | ' + new Date().toLocaleString();
+                    t.style.color = '';
+                    showToast('数据已更新到最新', 'success');
+                    btn.innerHTML = SVG_REFRESH + ' 更新数据';
+                    btn.disabled = false;
+                })
+                .catch(function(err) {
+                    t.textContent = '更新失败: ' + err.message;
+                    t.style.color = '#EF4444';
+                    showToast('GHA 更新失败，加载本地数据', 'error');
+                    btn.innerHTML = SVG_REFRESH + ' 更新数据';
+                    btn.disabled = false;
+                    fallbackMarketData();
+                    loadSignalHistory();
+                });
+            } else if (window.electronAPI) {
+                // Electron 模式
                 window.electronAPI.updateData()
                     .then(function(data) {
                         if (data.success) {
                             loadMarketData();
+                            loadSignalHistory();
                             showToast('数据更新完成，基金数据已同步', 'success');
                             btn.innerHTML = SVG_REFRESH + ' 更新数据';
                             btn.disabled = false;
@@ -1097,15 +1316,27 @@
                         btn.disabled = false;
                     });
             } else {
-                showToast('请使用桌面应用版本以获得完整功能！', 'error');
-                btn.innerHTML = SVG_REFRESH + ' 更新数据';
-                btn.disabled = false;
+                // 浏览器/GitHub Pages: 刷新 MARKET_DATA 后重新加载
+                var script = document.createElement('script');
+                script.src = 'market_data.js?t=' + Date.now();
+                script.onload = function() {
+                    if (typeof MARKET_DATA !== 'undefined') {
+                        updateDisplay(MARKET_DATA);
+                    }
+                    loadSignalHistory();
+                    showToast('页面数据已刷新（数据由 GitHub Actions 自动更新）', 'success');
+                    btn.innerHTML = SVG_REFRESH + ' 更新数据';
+                    btn.disabled = false;
+                };
+                script.onerror = function() {
+                    showToast('数据文件加载失败', 'error');
+                    btn.innerHTML = SVG_REFRESH + ' 更新数据';
+                    btn.disabled = false;
+                };
+                document.head.appendChild(script);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadMarketData();
-        });
-    </script>
+</script>
 </body>
 </html>

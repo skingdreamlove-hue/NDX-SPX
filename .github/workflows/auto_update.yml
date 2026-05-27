@@ -36,4 +36,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'auto: 更新市场数据'
-          file_pattern: 'market_data.js market_data.json docs/market_data.js docs/data/latest.json docs/data/real_fund_data.json'
+          file_pattern: 'market_data.js market_data.json daily_log.json daily_log.csv real_fund_data.json docs/market_data.js docs/data/latest.json docs/data/real_fund_data.json'

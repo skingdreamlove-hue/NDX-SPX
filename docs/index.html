@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#0a0e17">
 <meta name="apple-mobile-web-app-title" content="美股情绪">
 <link rel="manifest" href="manifest.json">
-<script src="market_data.js"></script>
 <title>美股情绪监测</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -128,6 +127,7 @@ body{
   font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none
 }
 .toast.show{opacity:1}
+.toast.show{opacity:1}
 .loading{text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px}
 .error-box{text-align:center;padding:24px 16px}
 .error-box .msg{color:var(--red);font-size:14px;margin-bottom:12px}
@@ -198,7 +198,19 @@ body{
 .fund-source-local{background:rgba(249,171,0,0.15);color:#f9ab00}
 .fund-update-btns{display:flex;gap:6px}
 .btn-status-update{background:rgba(249,171,0,0.12)!important;border-color:rgba(249,171,0,0.3)!important;color:#f9ab00!important}
-</style>
+.gha-badge{font-size:10px;padding:2px 7px;border-radius:9999px;font-weight:600;background:rgba(107,114,128,0.15);color:var(--text-muted);white-space:nowrap}
+.gha-badge.active{background:rgba(52,168,83,0.15);color:#34a853}
+.token-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px}
+.token-box{background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;width:100%;max-width:360px}
+.token-box h3{font-size:16px;margin-bottom:12px;color:var(--text-primary)}
+.token-box label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px}
+.token-box input{width:100%;padding:10px;border:1px solid var(--border-card);border-radius:8px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);outline:none;margin-bottom:12px}
+.token-box input:focus{border-color:#3B82F6}
+.token-box .btn-row{display:flex;gap:8px}
+.token-box .btn-row button{flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer}
+.token-box .btn-save{background:#34a853;color:#fff}
+.token-box .btn-del{background:rgba(234,67,53,0.15);color:#ea4335}
+.token-box .btn-close2{background:rgba(107,114,128,0.15);color:var(--text-secondary)}</style>
 </head>
 <body>
 
@@ -206,6 +218,10 @@ body{
   <div class="header-title" id="headerTitle">美股情绪监测</div>
   <div class="header-right">
     <span class="header-update" id="updateTime">加载中...</span>
+    <span class="gha-badge" id="ghaBadge" onclick="openTokenDialog()" style="cursor:pointer">自动更新</span>
+    <button class="btn-refresh" id="btnGHATrigger" onclick="triggerGHAUpdate()" aria-label="GHA更新" title="触发GitHub Actions更新">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </button>
     <button class="btn-refresh" id="btnRefresh" onclick="refreshAll()" aria-label="刷新">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
@@ -214,6 +230,19 @@ body{
 
 <div class="toast" id="toast"></div>
 <div class="status-bar" id="statusBar"><span class="status-dot" id="statusDot"></span><span id="statusText">加载中...</span></div>
+
+<div class="token-overlay" id="tokenOverlay" style="display:none" onclick="if(event.target===this)closeTokenDialog()">
+  <div class="token-box">
+    <h3>GitHub Token 设置</h3>
+    <label>输入 GitHub Token 以触发实时数据更新</label>
+    <input type="password" id="tokenInput" placeholder="github_pat_..." value="">
+    <div class="btn-row">
+      <button class="btn-save" onclick="saveToken()">保存</button>
+      <button class="btn-del" onclick="deleteToken()">清除</button>
+      <button class="btn-close2" onclick="closeTokenDialog()">取消</button>
+    </div>
+  </div>
+</div>
 
 <div class="container">
   <div class="tab-panel active" id="panelSentiment"><div class="loading">加载中，请稍候...</div></div>
@@ -232,112 +261,115 @@ body{
 </div>
 
 <script>
-
-// ═══════════════════════════════════════════════════════════════════
-//  US Stock Sentiment - Mobile (Cache-based Version)
-//  从 GHA 缓存的 latest.json 加载数据，无浏览器端实时请求
-// ═══════════════════════════════════════════════════════════════════
-
 var DATA_URL = 'data/latest.json';
 var FUND_URL = 'data/real_fund_data.json';
 var currentData = null;
 var fundData = [];
+var yfData = {};
 var fetchTimeout = 12000;
 var currentTab = 'sentiment';
 var fundApiUpdating = false;
 var fundApiTime = null;
 var fundStatusUpdating = false;
+var GH_OWNER = 'skingdreamlove-hue', GH_REPO = 'NDX-SPX', GH_BRANCH = 'master';
+var GH_TOKEN = localStorage.getItem('github_token') || '';
+function ghHeaders(){var h={'Accept':'application/vnd.github+json'};if(GH_TOKEN)h['Authorization']='Bearer '+GH_TOKEN;return h}
+function fetchRawFile(path){var url='https://raw.githubusercontent.com/'+GH_OWNER+'/'+GH_REPO+'/'+GH_BRANCH+'/'+path+'?t='+Date.now();var o={};if(GH_TOKEN)o.headers={'Authorization':'Bearer '+GH_TOKEN};return fetch(url,o).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()})}
+function triggerGHA(){return fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/actions/workflows/auto_update.yml/dispatches',{method:'POST',headers:ghHeaders(),body:JSON.stringify({ref:GH_BRANCH})})}
+function waitForGHA(){return new Promise(function(resolve,reject){var start=Date.now(),knownRunId=null;var url='https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/actions/runs?event=workflow_dispatch&branch='+GH_BRANCH+'&per_page=1';var iv=setInterval(function(){if(Date.now()-start>180000){clearInterval(iv);reject(new Error('超时'));return}fetch(url,{headers:ghHeaders()}).then(function(r){return r.json()}).then(function(d){var runs=d.workflow_runs||[];if(!runs.length)return;var run=runs[0];if(!knownRunId)knownRunId=run.id;if(run.id===knownRunId&&run.status==='completed'){clearInterval(iv);if(run.conclusion==='success')resolve();else reject(new Error('GHA: '+run.conclusion))}}).catch(function(){})},5000)})}
+function setToken(v){localStorage.setItem('github_token',v);GH_TOKEN=v;updateGHABadge()}
+function clearToken(){localStorage.removeItem('github_token');GH_TOKEN='';updateGHABadge()}
+function updateGHABadge(){var b=$id('ghaBadge');if(!b)return;b.textContent=GH_TOKEN?'Token已设':'自动更新';b.className='gha-badge'+(GH_TOKEN?' active':'')}
+var fundStatusTime = null;
 
-// ── 工具函数 ──
+var FUND_INFO = {
+  "270042": {"name": "广发纳斯达克100ETF联接人民币(QDII)A", "type": "A", "purchase": "1.30%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.13%", "category": "nasdaq"},
+  "040046": {"name": "华安纳斯达克100ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "018043": {"name": "天弘纳斯达克100指数发起(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.70%", "category": "nasdaq"},
+  "016532": {"name": "嘉实纳斯达克100ETF发起联接(QDII)人民币A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.70%", "category": "nasdaq"},
+  "000834": {"name": "大成纳斯达克100ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "160213": {"name": "国泰纳斯达克100指数(QDII)", "type": "A", "purchase": "1.50%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.15%", "category": "nasdaq"},
+  "016452": {"name": "南方纳斯达克100指数发起(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019547": {"name": "招商纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "016055": {"name": "博时纳斯达克100ETF发起式联接(QDII)人民币A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.75%", "category": "nasdaq"},
+  "539001": {"name": "建信纳斯达克100指数(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "nasdaq"},
+  "019524": {"name": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "161130": {"name": "易方达纳斯达克100LOF", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.72%", "category": "nasdaq"},
+  "018966": {"name": "汇添富纳斯达克100ETF发起式联接(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019172": {"name": "摩根纳斯达克100指数(QDII)人民币A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.10%", "sales": "0%", "total": "0.72%", "category": "nasdaq"},
+  "019736": {"name": "宝盈纳斯达克100指数发起(QDII)人民币", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "nasdaq"},
+  "019441": {"name": "万家纳斯达克100指数发起式(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.75%", "category": "nasdaq"},
+  "015299": {"name": "华夏纳斯达克100ETF发起式联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.20%", "sales": "0%", "total": "0.92%", "category": "nasdaq"},
+  "006479": {"name": "广发纳斯达克100ETF联接人民币(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.20%", "total": "1.20%", "category": "nasdaq"},
+  "014978": {"name": "华安纳斯达克100ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.20%", "total": "1.00%", "category": "nasdaq"},
+  "018044": {"name": "天弘纳斯达克100指数发起(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.20%", "total": "0.80%", "category": "nasdaq"},
+  "016453": {"name": "南方纳斯达克100指数发起C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.10%", "total": "0.75%", "category": "nasdaq"},
+  "008971": {"name": "大成纳斯达克100ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.30%", "total": "1.30%", "category": "nasdaq"},
+  "016533": {"name": "嘉实纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.25%", "total": "0.85%", "category": "nasdaq"},
+  "016057": {"name": "博时纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.30%", "total": "0.95%", "category": "nasdaq"},
+  "012752": {"name": "建信纳斯达克100指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.30%", "total": "1.30%", "category": "nasdaq"},
+  "019525": {"name": "华泰柏瑞纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.25%", "total": "0.90%", "category": "nasdaq"},
+  "018967": {"name": "汇添富纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.40%", "total": "1.05%", "category": "nasdaq"},
+  "019173": {"name": "摩根纳斯达克100指数(QDII)人民币C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.30%", "total": "0.90%", "category": "nasdaq"},
+  "019737": {"name": "宝盈纳斯达克100指数发起(QDII)人民币C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.25%", "total": "0.85%", "category": "nasdaq"},
+  "019442": {"name": "万家纳斯达克100指数发起式(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.20%", "total": "0.85%", "category": "nasdaq"},
+  "015300": {"name": "华夏纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.30%", "total": "1.10%", "category": "nasdaq"},
+  "050025": {"name": "博时标普500ETF联接(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.20%", "sales": "0%", "total": "0.92%", "category": "sp500"},
+  "017641": {"name": "摩根标普500指数(QDII)A", "type": "A", "purchase": "1.20%", "management": "0.50%", "custody": "0.15%", "sales": "0%", "total": "0.77%", "category": "sp500"},
+  "161125": {"name": "易方达标普500指数LOF", "type": "A", "purchase": "1.20%", "management": "0.80%", "custody": "0.20%", "sales": "0%", "total": "1.12%", "category": "sp500"},
+  "017028": {"name": "国泰标普500ETF发起式联接(QDII)A", "type": "A", "purchase": "1.00%", "management": "0.60%", "custody": "0.15%", "sales": "0%", "total": "0.85%", "category": "sp500"},
+  "006075": {"name": "博时标普500ETF联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.20%", "sales": "0.35%", "total": "1.15%", "category": "sp500"},
+  "019305": {"name": "摩根标普500指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.30%", "total": "0.95%", "category": "sp500"},
+  "012860": {"name": "易方达标普500指数(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.80%", "custody": "0.20%", "sales": "0.35%", "total": "1.35%", "category": "sp500"},
+  "017030": {"name": "国泰标普500ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.15%", "sales": "0.30%", "total": "1.05%", "category": "sp500"},
+  "019548": {"name": "招商纳斯达克100ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.15%", "sales": "0.40%", "total": "1.05%", "category": "nasdaq"},
+  "012870": {"name": "易方达纳斯达克100ETF联接(QDII-LOF)C(人民币)", "type": "C", "purchase": "0.00%", "management": "0.50%", "custody": "0.10%", "sales": "0.30%", "total": "0.90%", "category": "nasdaq"},
+  "018064": {"name": "华夏标普500ETF发起式联接(QDII)A(人民币)", "type": "A", "purchase": "1.20%", "management": "0.60%", "custody": "0.15%", "sales": "0%", "total": "0.76%", "category": "sp500"},
+  "018065": {"name": "华夏标普500ETF发起式联接(QDII)C", "type": "C", "purchase": "0.00%", "management": "0.60%", "custody": "0.15%", "sales": "0.30%", "total": "1.05%", "category": "sp500"}
+};
+
 function $id(id){return document.getElementById(id)}
-function showToast(msg,type){var t=$id('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(function(){t.className='toast'},3000)}
-function setStatus(live,msg){if(live){$id('statusDot').className='status-dot live'}else{$id('statusDot').className='status-dot stale'}$id('statusText').textContent=msg}
-function switchTab(name){
-  if(name==='restriction'){loadFundData()}
-  currentTab=name;
-  var panels=document.querySelectorAll('.tab-panel'),btns=document.querySelectorAll('.tab-btn');
-  for(var i=0;i<panels.length;i++){panels[i].classList.toggle('active',panels[i].id==='panel'+name.charAt(0).toUpperCase()+name.slice(1))}
-  for(var i=0;i<btns.length;i++){btns[i].classList.toggle('active',btns[i].id==='tab'+name.charAt(0).toUpperCase()+name.slice(1))}
+function showToast(msg){
+  var t=$id('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(function(){t.classList.remove('show')},2000)
 }
-function parseLimit(s){if(!s||s==='--')return null;var m=s.match(/([\\d,.]+)/);return m?parseFloat(m[1].replace(/,/g,'')):null}
-function hasPurchaseLimit(s){return s&&s.indexOf('限购')>=0}
+
 function getSentimentClass(level){
-  if(!level)return'';
-  if(level.indexOf('恐慌')>=0)return'signal-fear';
-  if(level.indexOf('贪婪')>=0)return'signal-greed';
-  return'signal-neutral'
+  if(!level) return 'signal-neutral';
+  if(level.indexOf('恐慌')>=0) return 'signal-fear';
+  if(level.indexOf('贪婪')>=0) return 'signal-greed';
+  return 'signal-neutral'
 }
 function getEmotionColorClass(level){
-  if(!level)return'';
-  if(level.indexOf('恐慌')>=0)return'signal-fear';
-  if(level.indexOf('贪婪')>=0)return'signal-greed';
-  return'signal-neutral'
+  if(!level) return 'tag-yellow';
+  if(level.indexOf('恐慌')>=0) return 'tag-green';
+  if(level.indexOf('贪婪')>=0) return 'tag-red';
+  return 'tag-yellow'
 }
-function fmtNum(v,dec){return v!=null?Number(v).toLocaleString(undefined,{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0}):'---'}
-function fmtPct(v){return v!=null?v.toFixed(1)+'%':'---'}
-
-// ── 数据加载 ──
-function convertMarketData(md){
-  if(!md)return null;
-  return {
-    sentiment_result: md.sentiment_result||md.sentiment_analysis||'中性',
-    signal_strength: md.signal_strength||'★ 弱',
-    sentiment_conditions: md.sentiment_conditions||[],
-    position_advice: md.position_advice||'--',
-    target_position: md.target_position||50,
-    daily_buy_amount: md.daily_buy_amount||300,
-    current_vix: md.current_vix,
-    current_nasdaq100: md.current_nasdaq100||md.nasdaq100_current,
-    current_sp500: md.current_sp500||md.sp500_current,
-    nasdaq100_dev_ma200: md.nasdaq100_deviation_200ma,
-    sp500_dev_ma200: md.sp500_deviation_200ma,
-    nasdaq100_drawdown: md.nasdaq100_drawdown,
-    sp500_drawdown: md.sp500_drawdown,
-    vix_term_ratio: md.vix_term_ratio,
-    ndx_breadth_200ma: md.ndx_breadth_200ma,
-    ndx_spx_ratio: md.ndx_spx_ratio,
-    iwm_spy_ratio: md.iwm_spy_ratio,
-    tnx_ma50_diff: md.tnx_ma50_diff,
-    rate_shock: md.is_rate_shock||false,
-    is_live: false,
-    last_update: md.last_update||md._generated,
-    indicators: {
-      vix: md.current_vix,
-      vix_term_ratio: md.vix_term_ratio,
-      ndx_breadth_200ma: md.ndx_breadth_200ma,
-      ndx_spx_ratio: md.ndx_spx_ratio,
-      iwm_spy_ratio: md.iwm_spy_ratio,
-      tnx_ma50_diff: md.tnx_ma50_diff,
-      qqq_pcr: md.qqq_pcr,
-      spy_pcr: md.spy_pcr,
-      credit_spread: md.credit_spread,
-      sp500_breadth_200ma: md.sp500_breadth_200ma,
-      on_rrp_current: md.on_rrp_current
-    },
-    indices: {
-      nasdaq100: md.current_nasdaq100||md.nasdaq100_current,
-      sp500: md.current_sp500||md.sp500_current,
-      nasdaq100_dev_ma200: md.nasdaq100_deviation_200ma,
-      sp500_dev_ma200: md.sp500_deviation_200ma,
-      nasdaq100_drawdown: md.nasdaq100_drawdown,
-      sp500_drawdown: md.sp500_drawdown
-    }
-  };
+function fmtPct(v){
+  if(v==null||v===undefined) return '---';
+  var n=Number(v),c=n>=0?'up':'down';
+  return '<span class="'+c+'">'+(n>=0?'+':'')+n.toFixed(2)+'%</span>'
+}
+function fmtNum(v,d){
+  if(v==null||v===undefined) return '---';
+  return Number(v).toFixed(d||0)
 }
 
-function loadStaticData(){
-  return fetchJSON(DATA_URL+'?t='+Date.now()).then(function(d){
-    currentData=d;
-    return d
-  }).catch(function(e){
-    // 回退到 market_data.js 中的静态数据
-    if(typeof MARKET_DATA !== 'undefined'){
-      currentData=convertMarketData(MARKET_DATA);
-    }else{
-      currentData=null;
-    }
-    return currentData
-  })
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab-panel').forEach(function(el){el.classList.remove('active')});
+  document.querySelectorAll('.tab-btn').forEach(function(el){el.classList.remove('active')});
+  $id('panel'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  $id('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  $id('headerTitle').textContent = tab==='restriction' ? '限购查询' : '美股情绪监测';
+  if(tab==='restriction' && fundData.length===0){loadFundData()}
+}
+
+function setStatus(live,text){
+  var dot=$id('statusDot'),txt=$id('statusText');
+  dot.className='status-dot '+(live?'live':'');
+  txt.textContent=text||''
 }
 
 function fetchJSON(url,timeout){
@@ -348,122 +380,267 @@ function fetchJSON(url,timeout){
     .catch(function(e){clearTimeout(tid);throw e})
 }
 
-// ── UI构建 ──
+function fetchYF(symbol){
+  var ctrl=new AbortController();
+  var tid=setTimeout(function(){ctrl.abort()},fetchTimeout);
+  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=5d';
+  return fetch(url,{signal:ctrl.signal})
+    .then(function(r){clearTimeout(tid);if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
+    .then(function(d){
+      var meta=d.chart.result[0].meta;
+      var quote=d.chart.result[0].indicators.quote[0];
+      var n=quote.close.length;
+      return {symbol:symbol,price:quote.close[n-1],prevClose:meta.chartPreviousClose,high:meta.regularMarketDayHigh,low:meta.regularMarketDayLow}
+    })
+    .catch(function(e){clearTimeout(tid);return null})
+}
+
+function loadStaticData(){
+  return fetchJSON(DATA_URL).then(function(d){
+    currentData=d;
+    if(d.last_update){$id('updateTime').textContent=d.last_update.slice(5,16)}
+    setStatus(false,'桌面端数据: '+(d.last_update||'未知'))
+    return d
+  }).catch(function(e){setStatus(false,'无法加载数据');throw e})
+}
+
+function loadLiveData(){
+  setStatus(false,'获取实时数据...')
+  return Promise.all([fetchYF('^VIX'),fetchYF('^VIX3M'),fetchYF('QQQ'),fetchYF('SPY'),fetchYF('^TNX')])
+    .then(function(r){
+      yfData.vix=r[0];yfData.vix3m=r[1];yfData.qqq=r[2];yfData.spy=r[3];yfData.tnx=r[4]
+      var c=(r[0]?1:0)+(r[1]?1:0)+(r[2]?1:0)+(r[3]?1:0)+(r[4]?1:0)
+      setStatus(c>=3,c+'/'+5+' 项实时数据可用')
+    })
+}
+
 function buildSentimentUI(){
-  var d=currentData;
-  if(!d){
-    $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
-    return
+  if(!currentData){
+    $id('panelSentiment').innerHTML='<div class="error-box"><div class="msg">数据加载失败</div><button onclick="refreshAll()">重试</button></div>';return
   }
-
-  var s=d.sentiment_result||d.sentiment_analysis||'中性';
-  var st=d.signal_strength||'★ 弱';
-  var conds=d.sentiment_conditions||[];
-  var pAdv=d.position_advice||'--';
-  var pTarget=d.target_position||'--';
-  var pBuy=d.daily_buy_amount||'--';
-
-  // 指标值
-  var vix=d.current_vix;
-  var ndxPrice=d.current_nasdaq100;
-  var spxPrice=d.current_sp500;
-  var ndxDev=d.nasdaq100_dev_ma200;
-  var spxDev=d.sp500_dev_ma200;
-  var ndxDraw=d.nasdaq100_drawdown;
-  var spxDraw=d.sp500_drawdown;
-  var vixTerm=d.vix_term_ratio;
-  var ndxBreadth=d.ndx_breadth_200ma;
-  var ndxSpxRatio=d.ndx_spx_ratio;
-  var iwmSpyRatio=d.iwm_spy_ratio;
-  var tnxDev=d.tnx_ma50_diff;
-
-  // 补充嵌套字段
-  if(d.indicators){
-    var ind=d.indicators;
-    if(vix==null) vix=ind.vix;
-    if(vixTerm==null) vixTerm=ind.vix_term_ratio;
-    if(ndxBreadth==null) ndxBreadth=ind.ndx_breadth_200ma;
-    if(ndxSpxRatio==null) ndxSpxRatio=ind.ndx_spx_ratio;
-    if(iwmSpyRatio==null) iwmSpyRatio=ind.iwm_spy_ratio;
-    if(tnxDev==null) tnxDev=ind.tnx_ma50_diff;
+  var d=currentData,s=d.sentiment||{},p=d.position||{},ix=d.indices||{},ind=d.indicators||{},sCls=getSentimentClass(s.level),emoCls=getEmotionColorClass(s.level);
+  var vix=ind.vix!=null?ind.vix.toFixed(2):'---';
+  var vixLive=yfData.vix&&yfData.vix.price!=null?yfData.vix.price.toFixed(2):null;
+  var vixDisp=vixLive||vix;
+  var vixChange=vixLive&&ind.vix?((yfData.vix.price-ind.vix)/ind.vix*100).toFixed(1):null;
+  var ndxPriceLive=yfData.qqq&&yfData.qqq.price!=null?yfData.qqq.price.toFixed(0):null;
+  var spxPriceLive=yfData.spy&&yfData.spy.price!=null?yfData.spy.price.toFixed(0):null;
+  var rec=d.recent_signals||[],eventsHtml='';
+  for(var i=rec.length-1;i>=0;i--){
+    var ev=rec[i],eCls=getEmotionColorClass(ev.emotion);
+    eventsHtml+='<div class="recent-item"><span class="recent-date">'+ev.date.slice(-5)+'</span><span class="recent-emotion '+eCls+'">'+ev.emotion+'</span><span class="recent-position">'+ev.position+'</span><span class="recent-action">'+ev.action+'</span></div>'
   }
-  if(d.indices){
-    var idx=d.indices;
-    if(ndxPrice==null) ndxPrice=idx.nasdaq100;
-    if(spxPrice==null) spxPrice=idx.sp500;
-    if(ndxDev==null) ndxDev=idx.nasdaq100_dev_ma200;
-    if(spxDev==null) spxDev=idx.sp500_dev_ma200;
-    if(ndxDraw==null) ndxDraw=idx.nasdaq100_drawdown;
-    if(spxDraw==null) spxDraw=idx.sp500_drawdown;
-  }
-
-  var sCls=getSentimentClass(s);
-  var condHtml='';
-  if(conds.length>0){
-    for(var i=0;i<conds.length;i++){
-      var label='';
-      if(conds[i].indexOf('vix')>=0) label='VIX异常';
-      else if(conds[i].indexOf('ndx_dev')>=0||conds[i].indexOf('spx_dev')>=0) label='均线偏离';
-      else if(conds[i].indexOf('drawdown')>=0) label='回撤';
-      else label=conds[i];
-      condHtml+='<span class="tag '+sCls+'">'+label+'</span> '
-    }
-  }
-
-  var ndxDisp=ndxPrice!=null?Number(ndxPrice).toLocaleString(undefined,{maximumFractionDigits:0}):'---';
-  var spxDisp=spxPrice!=null?Number(spxPrice).toLocaleString(undefined,{maximumFractionDigits:0}):'---';
-
+  var condTags='';
+  if(s.conditions&&s.conditions.length){for(var ci=0;ci<s.conditions.length;ci++){condTags+='<span class="tag '+emoCls+'">'+s.conditions[ci]+'</span> '}}
   var html=''
-    +'<div class="card signal-hero '+sCls+'"><div class="signal-label">当前情绪</div><div class="signal-emotion">'+s+'</div><div class="signal-strength">信号强度: '+st+'</div><div style="font-size:10px;color:var(--orange);margin-top:4px">📦 缓存数据'+((d._generated||d.last_update)?' <span style="color:var(--text-muted)">('+((d._generated||d.last_update)).slice(0,16)+')</span>':'')+'</div>'+((condHtml?'<div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">触发: '+condHtml+'</div>':''))+'</div>'
-
-    +'<div class="card"><div class="position-row">'
-      +'<div class="position-item"><div class="position-label">目标仓位</div><div class="position-val">'+(pTarget!='--'?pTarget+'%':'--')+'</div></div>'
-      +'<div class="position-item"><div class="position-label">每日定投</div><div class="position-val">$'+(pBuy!='--'?pBuy:300)+'</div></div>'
-      +'<div class="position-item"><div class="position-label">操作建议</div><div class="position-val" style="font-size:16px">'+pAdv+'</div></div>'
-    +'</div></div>'
-
-    +'<div class="card"><div class="index-compare">'
-      +'<div class="index-block"><div class="index-name">纳斯达克100</div><div class="index-price">'+ndxDisp+'</div><div class="index-dev">MA200偏差 '+(ndxDev!=null?ndxDev.toFixed(1)+'%':'---')+'</div><div class="index-dev">距高点 '+(ndxDraw!=null?ndxDraw.toFixed(1)+'%':'---')+'</div></div>'
-      +'<div class="index-block"><div class="index-name">标普500</div><div class="index-price">'+spxDisp+'</div><div class="index-dev">MA200偏差 '+(spxDev!=null?spxDev.toFixed(1)+'%':'---')+'</div><div class="index-dev">距高点 '+(spxDraw!=null?spxDraw.toFixed(1)+'%':'---')+'</div></div>'
-    +'</div></div>'
-
-    +'<div class="metrics-grid">'
-      +'<div class="metric-item"><div class="metric-name">VIX 恐慌指数</div><div class="metric-val">'+(vix!=null?vix.toFixed(2):'---')+'</div><div class="metric-sub">期限比: '+(vixTerm!=null?vixTerm.toFixed(2):'---')+'</div></div>'
-      +'<div class="metric-item"><div class="metric-name">NDX/SPX 比值</div><div class="metric-val">'+(ndxSpxRatio!=null?ndxSpxRatio.toFixed(2):'---')+'</div><div class="metric-sub">科技/传统</div></div>'
-      +'<div class="metric-item"><div class="metric-name">IWM/SPY 比值</div><div class="metric-val">'+(iwmSpyRatio!=null?iwmSpyRatio.toFixed(2):'---')+'</div><div class="metric-sub">小盘/大盘</div></div>'
-      +'<div class="metric-item"><div class="metric-name">10Y国债偏离MA50</div><div class="metric-val">'+(tnxDev!=null?tnxDev.toFixed(1)+'%':'---')+'</div><div class="metric-sub">'+(d.rate_shock?'⚠ 冲击中':'正常')+'</div></div>'
-    +'</div>';
-
-  // 如果数据有额外指标，追加显示
-  if(d.indicators){
-    var ind=d.indicators;
-    var extra='';
-    if(ind.qqq_pcr!=null) extra+='<div class="metric-item"><div class="metric-name">QQQ PCR</div><div class="metric-val">'+ind.qqq_pcr.toFixed(2)+'</div><div class="metric-sub">快照</div></div>';
-    if(ind.spy_pcr!=null) extra+='<div class="metric-item"><div class="metric-name">SPY PCR</div><div class="metric-val">'+ind.spy_pcr.toFixed(2)+'</div><div class="metric-sub">快照</div></div>';
-    if(ind.credit_spread!=null) extra+='<div class="metric-item"><div class="metric-name">信用利差</div><div class="metric-val">'+ind.credit_spread.toFixed(2)+'%</div><div class="metric-sub">快照</div></div>';
-    if(ind.ndx_breadth_200ma!=null) extra+='<div class="metric-item"><div class="metric-name">纳指>200日线</div><div class="metric-val">'+ind.ndx_breadth_200ma.toFixed(1)+'%</div><div class="metric-sub">快照</div></div>';
-    if(ind.sp500_breadth_200ma!=null) extra+='<div class="metric-item"><div class="metric-name">标普>200日线</div><div class="metric-val">'+ind.sp500_breadth_200ma.toFixed(1)+'%</div><div class="metric-sub">快照</div></div>';
-    if(ind.on_rrp_current!=null) extra+='<div class="metric-item"><div class="metric-name">ON RRP 余额</div><div class="metric-val">'+ind.on_rrp_current.toFixed(2)+'T</div><div class="metric-sub">快照</div></div>';
-    if(extra) html+='<div class="metrics-grid">'+extra+'</div>'
-  }
-
-  // 近期信号
-  if(d.recent_signals&&d.recent_signals.length>0){
-    var rec=d.recent_signals;
-    var evHtml='';
-    for(var i=rec.length-1;i>=0;i--){
-      var ev=rec[i],eCls=getEmotionColorClass(ev.emotion);
-      evHtml+='<div class="recent-item"><span class="recent-date">'+(ev.date||'').slice(-5)+'</span><span class="recent-emotion '+eCls+'">'+ev.emotion+'</span><span class="recent-position">'+ev.position+'</span><span class="recent-action">'+ev.action+'</span></div>'
-    }
-    html+='<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+evHtml+'</div></div>'
-  }
-
+  +'<div class="card signal-hero '+sCls+'"><div class="signal-label">当前情绪</div><div class="signal-emotion">'+s.level+'</div><div class="signal-strength">信号强度: '+s.strength+'</div>'+(condTags?'<div style="margin-top:8px">触发条件: '+condTags+'</div>':'')+'</div>'
+  +'<div class="card"><div class="position-row">'
+    +'<div class="position-item"><div class="position-label">目标仓位</div><div class="position-val">'+p.target+'%</div></div>'
+    +'<div class="position-item"><div class="position-label">每日定投</div><div class="position-val">$'+p.daily_buy+'</div></div>'
+    +'<div class="position-item"><div class="position-label">操作建议</div><div class="position-val" style="font-size:16px">'+p.advice+'</div></div>'
+  +'</div></div>'
+  +'<div class="card"><div class="index-compare">'
+    +'<div class="index-block"><div class="index-name">纳斯达克100</div><div class="index-price">'+(ndxPriceLive||fmtNum(ix.nasdaq100,0))+'</div><div class="index-dev">MA200偏差 '+fmtPct(ix.nasdaq100_dev_ma200)+'</div><div class="index-dev">距高点 '+fmtPct(ix.nasdaq100_drawdown)+'</div></div>'
+    +'<div class="index-block"><div class="index-name">标普500</div><div class="index-price">'+(spxPriceLive||fmtNum(ix.sp500,0))+'</div><div class="index-dev">MA200偏差 '+fmtPct(ix.sp500_dev_ma200)+'</div><div class="index-dev">距高点 '+fmtPct(ix.sp500_drawdown)+'</div></div>'
+  +'</div></div>'
+  +'<div class="metrics-grid">'
+    +'<div class="metric-item"><div class="metric-name">VIX 恐慌指数</div><div class="metric-val">'+vixDisp+(vixChange&&Math.abs(vixChange)>=0.5?' <span style="font-size:11px;'+(vixChange>0?'color:var(--red)':'color:var(--green)')+'">'+(vixChange>0?'↑':'↓')+Math.abs(vixChange)+'%</span>':'')+'</div><div class="metric-sub">期限比: '+(ind.vix_term_ratio!=null?ind.vix_term_ratio.toFixed(2):'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">信用利差</div><div class="metric-val">'+(ind.credit_spread!=null?ind.credit_spread.toFixed(2)+'%':'---')+'</div><div class="metric-sub">高收益债利差</div></div>'
+    +'<div class="metric-item"><div class="metric-name">Put/Call 比 QQQ</div><div class="metric-val">'+(ind.qqq_pcr!=null?ind.qqq_pcr.toFixed(2):'---')+'</div><div class="metric-sub">低位=乐观 高位=恐慌</div></div>'
+    +'<div class="metric-item"><div class="metric-name">Put/Call 比 SPY</div><div class="metric-val">'+(ind.spy_pcr!=null?ind.spy_pcr.toFixed(2):'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">NDX高于200日线</div><div class="metric-val">'+(ind.ndx_breadth_200ma!=null?ind.ndx_breadth_200ma.toFixed(1)+'%':'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">SPX高于200日线</div><div class="metric-val">'+(ind.sp500_breadth_200ma!=null?ind.sp500_breadth_200ma.toFixed(1)+'%':'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">NDX/SPX 比值</div><div class="metric-val">'+(ind.ndx_spx_ratio!=null?ind.ndx_spx_ratio.toFixed(2):'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">10Y国债偏离MA50</div><div class="metric-val">'+(ind.tnx_ma50_diff!=null?ind.tnx_ma50_diff.toFixed(1)+'%':'---')+'</div></div>'
+    +'<div class="metric-item"><div class="metric-name">ON RRP 余额</div><div class="metric-val">'+(ind.on_rrp_current!=null?ind.on_rrp_current.toFixed(2)+'T':'---')+'</div></div>'
+  +'</div>'
+  +(rec.length?'<div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">近期信号</div><div class="recent-list">'+eventsHtml+'</div></div>':'');
   $id('panelSentiment').innerHTML=html
 }
 
-// ── 基金数据功能 ──
+function fetchFundRealtime(code){
+  return new Promise(function(resolve,reject){
+    var script=document.createElement('script');
+    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
+    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
+    window.jsonpgz=function(data){cleanup();resolve(data)};
+    script.src='https://fundgz.1234567.com.cn/js/'+code+'.js?rt='+Date.now();
+    script.onerror=function(){cleanup();reject(new Error('error'))};
+    document.head.appendChild(script)
+  })
+}
+
+function updateFundDataFromAPI(){
+  if(fundApiUpdating) return;
+  fundApiUpdating=true;
+  var codes=Object.keys(FUND_INFO);
+  var total=codes.length;
+  var done=0;
+  var ok=0;
+  var apiResults={};
+  var progressBar=$id('fundProgressBar');
+  var progressWrap=$id('fundProgress');
+  var btnUpdate=$id('btnFundUpdate');
+  if(progressWrap)progressWrap.classList.add('active');
+  if(btnUpdate)btnUpdate.disabled=true;
+  function updateProgress(){
+    var pct=Math.round(done/total*100);
+    if(progressBar)progressBar.style.width=pct+'%';
+    if(btnUpdate)btnUpdate.textContent=done+'/'+total
+  }
+  function next(){
+    if(done>=total){
+      fundApiUpdating=false;
+      fundApiTime=new Date();
+      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='在线更新'}
+      if(progressWrap)progressWrap.classList.remove('active');
+      if(progressBar)progressBar.style.width='0';
+      mergeApiData(apiResults,ok);
+      showToast('已更新 '+ok+'/'+total+' 只基金实时数据');
+      return
+    }
+    var code=codes[done];
+    fetchFundRealtime(code).then(function(data){
+      apiResults[data.fundcode]=data;
+      ok++;
+      done++;
+      updateProgress();
+      next()
+    }).catch(function(){
+      done++;
+      updateProgress();
+      next()
+    })
+  }
+  updateProgress();
+  next()
+}
+
+function updateTradeStatus(){
+  if(fundStatusUpdating||fundApiUpdating)return;
+  if(!fundData||fundData.length===0){showToast('请先更新基金数据');return}
+  fundStatusUpdating=true;
+  var codes=fundData.map(function(f){return f['基金代码']});
+  var progressBar=$id('fundProgressBar');
+  var progressWrap=$id('fundProgress');
+  var btnStatus=$id('btnStatusUpdate');
+  if(progressWrap)progressWrap.classList.add('active');
+  if(btnStatus){btnStatus.disabled=true;btnStatus.textContent='获取中...'}
+  if(progressBar)progressBar.style.width='20%';
+
+  var varName='_fundStatus_'+Date.now();
+  var script=document.createElement('script');
+  var done=false;
+  var timeout=setTimeout(function(){
+    if(done)return;done=true;
+    cleanup();fundStatusUpdating=false;
+    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
+    if(progressWrap)progressWrap.classList.remove('active');
+    showToast('获取交易状态超时，请重试')
+  },90000);
+  function cleanup(){
+    clearTimeout(timeout);
+    try{delete window[varName]}catch(e){}
+    if(script.parentNode)script.parentNode.removeChild(script)
+  }
+  script.onload=function(){
+    if(done)return;done=true;
+    var data=window[varName];
+    cleanup();
+    if(!data||!data.datas){fundStatusUpdating=false;if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}if(progressWrap)progressWrap.classList.remove('active');showToast('获取交易状态失败');return}
+    var ok=0;
+    var codeSet={};
+    for(var i=0;i<codes.length;i++){codeSet[codes[i]]=true}
+    for(var j=0;j<data.datas.length;j++){
+      var item=data.datas[j];
+      var code=item[0];
+      if(codeSet[code]){
+        var sgzt=item[5]||'';
+        var shzt=item[6]||'';
+        var limitAmt=item[9]||'';
+        var statusText=sgzt;
+        if(shzt&&shzt!==sgzt)statusText+='，'+shzt;
+        if(limitAmt&&limitAmt!=='0'&&limitAmt!=='100000000000'&&sgzt.indexOf('暂停')<0){
+          var amt=parseFloat(limitAmt);
+          if(amt>0){
+            var amtStr=amt>=10000?(amt/10000)+'万':amt+'元';
+            statusText+='(限'+amtStr+')'
+          }
+        }
+        for(var k=0;k<fundData.length;k++){
+          if(fundData[k]['基金代码']===code){
+            fundData[k]['交易状态']=statusText;
+            fundData[k]['申购状态']=sgzt;
+            fundData[k]['赎回状态']=shzt;
+            if(limitAmt&&limitAmt!=='0')fundData[k]['日累计限定金额']=limitAmt;
+            ok++;break
+          }
+        }
+      }
+    }
+    fundStatusUpdating=false;
+    fundStatusTime=new Date();
+    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
+    if(progressWrap)progressWrap.classList.remove('active');
+    if(progressBar)progressBar.style.width='0';
+    buildRestrictionUI();
+    showToast('已更新 '+ok+'/'+codes.length+' 只基金交易状态')
+  };
+  script.src='https://fund.eastmoney.com/Data/Fund_JJJZ_Data.aspx?t=8&page=1,30000&px=z&sc=z&st=desc&sd=&ed=&js='+varName;
+  script.onerror=function(){
+    if(done)return;done=true;
+    cleanup();fundStatusUpdating=false;
+    if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
+    if(progressWrap)progressWrap.classList.remove('active');
+    showToast('获取交易状态失败，请检查网络')
+  };
+  document.head.appendChild(script)
+}
+
+function mergeApiData(apiResults,okCount){
+  if(fundData.length>0){
+    for(var i=0;i<fundData.length;i++){
+      var f=fundData[i];
+      var api=apiResults[f['基金代码']];
+      if(api){
+        f['最新净值']=api.dwjz;
+        f['日涨跌幅']=api.gszzl+'%';
+        f['净值日期']=api.gztime||api.jzrq;
+        f._apiSource=true
+      }
+    }
+  }else{
+    var codes=Object.keys(FUND_INFO);
+    fundData=[];
+    for(var i=0;i<codes.length;i++){
+      var code=codes[i];
+      var info=FUND_INFO[code];
+      var api=apiResults[code];
+      fundData.push({
+        "基金代码":code,
+        "基金名称":info.name,
+        "类型":info.type,
+        "最新净值":api?api.dwjz:"N/A",
+        "日涨跌幅":api?api.gszzl+"%":"N/A",
+        "净值日期":api?(api.gztime||api.jzrq):"N/A",
+        "交易状态":"N/A",
+        "购买手续费":info.purchase,
+        "管理费率":info.management,
+        "托管费率":info.custody,
+        "销售服务费":info.sales,
+        "合计费率":info.total,
+        "近1年":"N/A",
+        "链接":"https://fund.eastmoney.com/"+code+".html",
+        "分类":info.category,
+        _apiSource:!!api
+      })
+    }
+  }
+  buildRestrictionUI()
+}
+
 function loadFundData(){
-  fetchJSON(FUND_URL+'?t='+Date.now()).then(function(data){
+  fetchJSON(FUND_URL).then(function(data){
     fundData = data;
     buildRestrictionUI();
   }).catch(function(e){
@@ -472,9 +649,57 @@ function loadFundData(){
   })
 }
 
+function parseLimit(txt){
+  if(!txt||txt==='N/A'||txt==='-') return null;
+  var m=txt.match(/([\d.]+)(万?)元/)
+  if(m){var v=parseFloat(m[1]);if(m[2]==='万')v*=10000;return v}
+  return null
+}
+
+function getFundBadge(statusText){
+  if(!statusText||statusText==='N/A') return '<span class="fund-badge fund-badge-info">未知</span>';
+  var limit=parseLimit(statusText);
+  if(statusText.indexOf('暂停申购')>=0){
+    var cls='fund-badge-danger',label='暂停申购';
+    if(limit!=null){if(limit<100)cls='fund-badge-danger';else if(limit<1000)cls='fund-badge-warn';else cls='fund-badge-info'}
+    var m=statusText.match(/\(单日累计购买上限([\d.]+(?:万)?元)\)/);
+    if(m)label='限购 '+m[1]
+    return '<span class="fund-badge '+cls+'">'+label+'</span>'
+  }
+  if(statusText.indexOf('正常')>=0||statusText.indexOf('开放')>=0) return '<span class="fund-badge fund-badge-ok">可申购</span>'
+  return '<span class="fund-badge fund-badge-info">'+statusText+'</span>'
+}
+
+function parsePct(str){
+  if(!str||str==='N/A'||str==='-') return 0;
+  return parseFloat(str.replace('%',''))||0
+}
+function getNetReturn(f){
+  return parsePct(f['近1年']) - parsePct(f['合计费率'])
+}
+function isBuyable(f){
+  var s=f['交易状态']||'';
+  return s.indexOf('暂停申购')<0&&s.indexOf('暂停赎回')<0
+}
+
+function calcBuyableAmount(list){
+  var total=0;
+  for(var i=0;i<list.length;i++){
+    var s=list[i]['交易状态']||'';
+    if(s.indexOf('暂停申购')>=0) continue;
+    var m=s.match(/单日累计购买上限([\d.]+)(万?)元/);
+    if(m){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;total+=v}
+  }
+  return total
+}
+function formatBuyableAmount(total){
+  if(total>=10000) return (total/10000).toFixed(2)+'万元';
+  return total.toFixed(0)+'元'
+}
+
 function buildRestrictionUI(){
   if(!fundData||fundData.length===0){
-    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
+    var noDataHtml='<div class="fund-update-bar"><span style="font-size:12px;color:var(--text-muted)">无本地数据，点击右侧从API获取</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button></div></div><div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>';
     $id('panelRestriction').innerHTML=noDataHtml+'<div class="error-box"><div class="msg">暂无基金数据</div><button onclick="updateFundDataFromAPI()">从API获取</button></div>';return
   }
   var nasdaq=[],sp500=[];
@@ -485,27 +710,41 @@ function buildRestrictionUI(){
   }
   nasdaq.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
   sp500.sort(function(a,b){return getNetReturn(b)-getNetReturn(a)});
+
   var apiCount=0;
   for(var i=0;i<fundData.length;i++){if(fundData[i]._apiSource)apiCount++}
-  var sourceInfo=fundApiTime?'API更新于 '+fundApiTime.getHours()+':'+String(fundApiTime.getMinutes()).padStart(2,'0')+(apiCount>0?' ('+apiCount+'只实时)':''):'缓存数据';
+  var sourceInfo=fundApiTime?'API更新于 '+fundApiTime.getHours()+':'+String(fundApiTime.getMinutes()).padStart(2,'0')+(apiCount>0?' ('+apiCount+'只实时)':''):'本地缓存数据';
+
   function renderGroup(title,list){
     var h='';
     var buyable=calcBuyableAmount(list);
-    h+='<div class="fund-summary"><span>'+title+' ('+list.length+'只)</span><span>可买入：<span class="fund-summary-val">'+formatBuyableAmount(buyable.total,buyable.count)+'</span></span></div>';
+    h+='<div class="fund-summary"><span>'+title+'</span><span>可买入：<span class="fund-summary-val">'+formatBuyableAmount(buyable)+'</span></span></div>';
     for(var i=0;i<list.length;i++){
-      var f=list[i],netRet=getNetReturn(f),netRetStr=netRet.toFixed(2)+'%',netRetCls=netRet>0?'up':'down';
+      var f=list[i];
+      var netRet=getNetReturn(f);
+      var netRetStr=netRet.toFixed(2)+'%';
+      var netRetCls=netRet>0?'up':'down';
       var retRaw=f['近1年']||'-';
+      var limit=parseLimit(f['交易状态']);
       var sourceTag=f._apiSource?'<span class="fund-source-tag fund-source-api">实时</span>':'<span class="fund-source-tag fund-source-local">缓存</span>';
-      var s=f['交易状态']||'';
-      var limitHtml='';
-      var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
-      if(m&&s.indexOf('暂停申购')<0){var v=parseFloat(m[1])||0;if(m[2]==='万')v*=10000;limitHtml='<div class="purchase-limit">每日上限: <strong>'+v.toLocaleString()+'元</strong></div>'}
-      h+='<div class="fund-card"><div class="fund-card-top"><div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'+getStatusBadge(s)+'</div><div class="fund-card-meta"><div class="fund-meta-item"><span class="fund-meta-label">近一年收益</span><span class="'+netRetCls+'" style="font-weight:700;font-size:13px">'+netRetStr+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div><div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div></div>'+limitHtml+'</div>'
+      h+='<div class="fund-card">'
+        +'<div class="fund-card-top">'
+          +'<div><div class="fund-name">'+f['基金名称']+sourceTag+'</div><div class="fund-code">'+f['基金代码']+' · '+f['类型']+'类</div></div>'
+          +getFundBadge(f['交易状态'])
+        +'</div>'
+        +'<div class="fund-card-meta">'
+          +'<div class="fund-meta-item"><span class="fund-meta-label">近一年收益</span><span class="'+netRetCls+'" style="font-weight:700;font-size:13px">'+netRetStr+'</span></div>'
+          +'<div class="fund-meta-item"><span class="fund-meta-label">近1年(未扣费)</span><span>'+retRaw+'</span></div>'
+          +'<div class="fund-meta-item"><span class="fund-meta-label">合计费率</span><span>'+(f['合计费率']||'-')+'</span></div>'
+        +'</div>'
+        +(limit!=null&&limit>0?'<div class="purchase-limit">每日上限: <strong>'+limit.toLocaleString()+'元</strong></div>':'')
+      +'</div>';
     }
     return h
   }
+  var statusInfo=fundStatusTime?'状态 '+fundStatusTime.getHours()+':'+String(fundStatusTime.getMinutes()).padStart(2,'0'):'';
   var html=''
-    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+'</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">更新净值</button><button class="btn-fund-update btn-status-update" id="btnStatusUpdate" onclick="updateTradeStatus()">更新状态</button></div></div>'
+    +'<div class="fund-update-bar"><span style="font-size:11px;color:var(--text-muted)">'+sourceInfo+(statusInfo?' | '+statusInfo:'')+'</span><div class="fund-update-btns"><button class="btn-fund-update" id="btnFundUpdate" onclick="updateFundDataFromAPI()">在线更新</button><button class="btn-fund-update btn-status-update" id="btnStatusUpdate" onclick="updateTradeStatus()">更新状态</button></div></div>'
     +'<div class="fund-progress" id="fundProgress"><div class="fund-progress-bar" id="fundProgressBar"></div></div>'
     +'<div class="fund-group-title">纳斯达克100<span class="fund-group-count">'+nasdaq.length+'只基金</span></div>'
     +renderGroup('纳斯达克100',nasdaq)
@@ -514,212 +753,36 @@ function buildRestrictionUI(){
   $id('panelRestriction').innerHTML=html
 }
 
-// ── 基金辅助函数 ──
-function parsePct(str){
-  if(!str||str==='N/A'||str==='-') return 0;
-  return parseFloat(str.replace('%',''))||0
-}
-function getNetReturn(f){return parsePct(f['近1年']) - parsePct(f['合计费率'])}
-function isBuyable(f){var s=f['交易状态']||'';return s.indexOf('暂停申购')<0&&s.indexOf('暂停赎回')<0}
-function getStatusBadge(statusText){
-  if(!statusText||statusText==='--'||statusText==='N/A')return'<div style="text-align:right"><span class="fund-badge fund-badge-info">未知</span></div>';
-  var mainText=statusText;
-  var limitText='';
-  var m=statusText.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
-  if(m){mainText=statusText.replace(m[0],'').trim();limitText=m[0]}
-  var cls='fund-badge-info';
-  if(mainText.indexOf('暂停申购')>=0){cls='fund-badge-danger'}
-  else if(m){var lim=parseFloat(m[1]);if(m[2]==='万')lim*=10000;cls=lim<100?'fund-badge-danger':lim<1000?'fund-badge-warn':'fund-badge-ok'}
-  else if(mainText.indexOf('开放申购')>=0||mainText.indexOf('正常')>=0){cls='fund-badge-ok'}
-  var h='<div style="text-align:right"><span class="fund-badge '+cls+'">'+mainText+'</span>';
-  if(limitText)h+='<div style="font-size:10px;color:var(--text-muted);margin-top:2px">'+limitText+'</div>';
-  return h+'</div>'
-}
-function formatBuyableAmount(total,count){
-  if(total==null||total===0)return'<span style="color:var(--text-muted)">0</span>';
-  var amt='';
-  if(total>=100000000)amt=(total/100000000).toFixed(1)+'亿';
-  else if(total>=10000)amt=(total/10000).toFixed(0)+'万';
-  else amt=total.toLocaleString();
-  return'<span style="color:var(--green)">'+count+'只 / '+amt+'元</span>'
-}
-function calcBuyableAmount(list){
-  var total=0,count=0;
-  for(var i=0;i<list.length;i++){
-    var f=list[i],s=f['交易状态']||'';
-    if(s.indexOf('暂停申购')>=0)continue;
-    var m=s.match(/\(单日累计购买上限([\d.]+)(万?)元\)/);
-    if(m){var val=parseFloat(m[1])||0;if(m[2]==='万')val*=10000;total+=val;count++}
-  }
-  return{total:total,count:count}
+function showToast(msg){var el=$id('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show')},3000)}
+function openTokenDialog(){var d=$id('tokenOverlay');d.style.display='flex';$id('tokenInput').value=GH_TOKEN}
+function closeTokenDialog(){$id('tokenOverlay').style.display='none'}
+function saveToken(){var v=$id('tokenInput').value.trim();if(!v)return;setToken(v);closeTokenDialog();showToast('Token 已保存')}
+function deleteToken(){clearToken();closeTokenDialog();showToast('Token 已清除')}
+function triggerGHAUpdate(){
+  if(!GH_TOKEN){showToast('请先设置 Token');openTokenDialog();return}
+  if($id('btnGHATrigger').classList.contains('spinning'))return;
+  var btn=$id('btnGHATrigger');btn.classList.add('spinning');
+  showToast('正在触发 GitHub Actions...');
+  triggerGHA().then(function(r){if(!r.ok&&r.status!==204)throw Error('触发失败');showToast('GHA 已触发，等待完成...');return waitForGHA()})
+    .then(function(){showToast('更新完成，加载最新数据');return refreshAll()})
+    .catch(function(e){showToast('GHA 失败: '+e.message);console.error(e)})
+    .finally(function(){btn.classList.remove('spinning')})
 }
 
-// ── 基金实时数据更新（JSONP 方式）──
-var fundApiResults=[];var fundApiOk=0;var fundApiTotal=0;
-function fetchFundRealtime(code){
-  return new Promise(function(resolve,reject){
-    var script=document.createElement('script');
-    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
-    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
-    window.jsonpgz=function(data){cleanup();resolve(data)};
-    // 增加 f166（申购状态码）和 f167（赎回状态码）
-    script.src='https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f12,f14,f166,f167&secids=0.'+code+'&cb=jsonpgz';
-    document.body.appendChild(script)
-  })
-}
-function mergeApiData(apiResults, okCount){
-  var now=new Date();
-  for(var i=0;i<fundData.length;i++){
-    var f=fundData[i],api=apiResults[i];
-    if(api&&api.data&&api.data.diff&&api.data.diff.length>0){
-      var d=api.data.diff[0];
-      f['日涨跌幅']=d.f3!=null?d.f3.toFixed(2)+'%':'--';
-      f['实时净值']=d.f2;
-      f.基金代码=''+d.f12;
-      f._apiSource=true;
-      // 尝试更新交易状态（f166: 申购状态码, 1=可申购, 0=暂停）
-      if(d.f166!=null){
-        var currStatus=f['交易状态']||'';
-        // 仅当缓存数据是"暂停申购"而API说可申购时，才改写状态
-        if(d.f166===1 && currStatus.indexOf('暂停申购')>=0){
-          // 保留已有的限额信息
-          var limitMatch=currStatus.match(/\(单日累计购买上限[^)]+\)/);
-          var limitStr=limitMatch?limitMatch[0]:'';
-          f['交易状态']='开放申购'+(limitStr?' '+limitStr:'');
-        }
-      }
-    }
-  }
-  var msg='已更新 '+okCount+'/'+fundData.length+' 只基金';
-  showToast(msg,'success');
-  if(typeof buildRestrictionUI==='function')buildRestrictionUI()
-}
-function updateFundDataFromAPI(){
-  if(fundApiUpdating)return;
-  fundApiUpdating=true;
-  var progressWrap=document.getElementById('fundProgress');
-  var btnUpdate=document.getElementById('btnFundUpdate');
-  if(progressWrap)progressWrap.classList.add('active');
-  if(btnUpdate)btnUpdate.disabled=true;
-  var total=fundData.length,done=0,ok=0,results=[];
-  function updateProgress(){
-    var pct=Math.round(done/total*100);
-    var pb=document.getElementById('fundProgressBar');
-    if(pb)pb.style.width=pct+'%';
-    if(btnUpdate)btnUpdate.textContent=done+'/'+total
-  }
-  function next(){
-    if(done>=total){
-      fundApiUpdating=false;
-      fundApiTime=new Date();
-      if(btnUpdate){btnUpdate.disabled=false;btnUpdate.textContent='更新净值'}
-      if(progressWrap)progressWrap.classList.remove('active');
-      var pb=document.getElementById('fundProgressBar');
-      if(pb)pb.style.width='0';
-      mergeApiData(results,ok);
-      showToast('已更新 '+ok+'/'+total+' 只基金','success');
-      return
-    }
-    var f=fundData[done];
-    if(!f||!f.基金代码){done++;next();return}
-    fetchFundRealtime(f.基金代码).then(function(data){
-      results[done]=data;ok++;done++;updateProgress();next()
-    }).catch(function(){
-      results[done]=null;done++;updateProgress();next()
-    })
-  }
-  updateProgress();next()
-}
-
-// ── 交易状态更新 ──
-var fundStatusResults=[];var fundStatusOk=0;
-function fetchFundTradeStatus(code){
-  return new Promise(function(resolve,reject){
-    var script=document.createElement('script');
-    var tid=setTimeout(function(){cleanup();reject(new Error('timeout'))},6000);
-    function cleanup(){clearTimeout(tid);window.jsonpgz=null;if(script.parentNode)script.parentNode.removeChild(script)}
-    window.jsonpgz=function(data){cleanup();resolve(data)};
-    // 使用与更新净值相同的API，但增加状态字段 f166,f167
-    script.src='https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f12,f14,f166,f167&secids=0.'+code+'&cb=jsonpgz';
-    document.body.appendChild(script)
-  })
-}
-function updateTradeStatus(){
-  if(fundStatusUpdating)return;
-  fundStatusUpdating=true;
-  showToast('正在获取交易状态...','info');
-  var total=fundData.length,done=0,ok=0;
-  var btnStatus=document.getElementById('btnStatusUpdate');
-  if(btnStatus)btnStatus.disabled=true;
-  function next(){
-    if(done>=total){
-      fundStatusUpdating=false;
-      if(btnStatus){btnStatus.disabled=false;btnStatus.textContent='更新状态'}
-      var updated=0;
-      for(var i=0;i<fundData.length;i++){
-        var f=fundData[i],r=fundStatusResults[i];
-        if(r&&r.data&&r.data.diff&&r.data.diff.length>0){
-          var d=r.data.diff[0];
-          if(d.f166!=null){
-            var currStatus=f['交易状态']||'';
-            var limitMatch=currStatus.match(/\(单日累计购买上限[^)]+\)/);
-            var limitStr=limitMatch?limitMatch[0]:'';
-            if(d.f166===1){
-              f['交易状态']='开放申购'+(limitStr?' '+limitStr:'');
-            }else if(d.f166===0){
-              f['交易状态']='暂停申购'+(limitStr?' '+limitStr:'');
-            }
-            updated++;
-          }
-        }
-      }
-      showToast('状态更新完成 ('+updated+'/'+total+')','success');
-      if(typeof buildRestrictionUI==='function')buildRestrictionUI();
-      return
-    }
-    var f=fundData[done];
-    if(!f||!f.基金代码){done++;next();return}
-    fetchFundTradeStatus(f.基金代码).then(function(data){
-      fundStatusResults[done]=data;ok++;done++;next()
-    }).catch(function(){
-      fundStatusResults[done]=null;done++;next()
-    })
-  }
-  next()
-}
-
-// ── 刷新主入口（简化版：仅加载缓存数据）──
 function refreshAll(){
-  var btn=$id('btnRefresh');btn.classList.add('spinning');
-  setStatus(false,'加载数据...');
-
-  loadStaticData().then(function(){
-    buildSentimentUI();
-    setStatus(false,'缓存数据'+(currentData.last_update||currentData._generated?' ('+(currentData.last_update||currentData._generated)+')':''));
-  }).catch(function(e){
-    console.error(e);
-    if(currentData){
-      buildSentimentUI();
-    }else if(typeof MARKET_DATA !== 'undefined'){
-      currentData=convertMarketData(MARKET_DATA);
-      buildSentimentUI();
-    }else{
-      $id('panelSentiment').innerHTML='<div class="error-box" style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">📡</div><div style="font-size:14px;color:var(--text-muted)">数据加载失败</div><button onclick="refreshAll()" style="margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer">重试</button></div>';
-    }
-  }).finally(function(){
-    btn.classList.remove('spinning');
-    var d=currentData;
-    if(d&&(d.last_update||d._generated)){
-      $id('updateTime').textContent=(d.last_update||d._generated);
-    }else{
+  var btn=$id('btnRefresh');btn.classList.add('spinning')
+  var p = GH_TOKEN ? fetchRawFile('market_data.json').then(function(d){if(d&&d.last_update){currentData=d;$id('updateTime').textContent=d.last_update.slice(5,16)}setStatus(false,'实时数据: '+(d.last_update||'未知'))}).catch(function(){return loadStaticData()}) : loadStaticData();
+  p.then(function(){return loadLiveData()}).then(function(){buildSentimentUI()})
+    .catch(function(e){console.error(e);if(!currentData){$id('panelSentiment').innerHTML='<div class="error-box"><div class="msg">数据加载失败</div><button onclick="refreshAll()">重试</button></div>'}else{buildSentimentUI()}})
+    .finally(function(){
+      btn.classList.remove('spinning');
       var now=new Date();
       var mm=String(now.getMonth()+1).padStart(2,'0');
       var dd=String(now.getDate()).padStart(2,'0');
       var hh=String(now.getHours()).padStart(2,'0');
       var mi=String(now.getMinutes()).padStart(2,'0');
-      $id('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi;
-    }
-  })
+      $id('updateTime').textContent=mm+'-'+dd+' '+hh+':'+mi
+    })
 }
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
@@ -728,7 +791,6 @@ document.addEventListener('DOMContentLoaded',function(){
   refreshAll();
   setInterval(refreshAll,5*60*1000);
 })
-
 </script>
 </body>
 </html>

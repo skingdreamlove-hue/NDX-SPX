@@ -7,15 +7,23 @@ import threading
 import uuid
 import csv as builtin_csv
 from flask import Flask, jsonify, send_from_directory, request
+from flask_cors import CORS
 from datetime import datetime
 
 import time
-from tradingagents_wrapper import (
-    start_analysis_task, start_chat_task, get_task_events, is_task_done,
-    get_current_data_summary, cancel_task
-)
+
+# TA 模块导入（Render 上若不可用不影响核心功能）
+try:
+    from tradingagents_wrapper import (
+        start_analysis_task, start_chat_task, get_task_events, is_task_done,
+        get_current_data_summary, cancel_task
+    )
+    _ta_available = True
+except ImportError:
+    _ta_available = False
 
 app = Flask(__name__, static_folder='.')
+CORS(app)  # 允许 GitHub Pages 跨域调用
 
 # 动态端口查找
 def find_available_port(start_port=5000):
@@ -34,6 +42,15 @@ def find_available_port(start_port=5000):
 
 @app.route('/')
 def index():
+    return send_from_directory('.', 'index.html')
+
+@app.route('/api/health')
+def api_health():
+    return jsonify({
+        "status": "ok",
+        "ta_available": _ta_available,
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
     return send_from_directory('.', 'index.html')
 
 @app.route('/api/update-data', methods=['POST'])
@@ -111,7 +128,82 @@ def backtest_page():
 def restriction_page():
     return send_from_directory('.', 'restriction.html')
 
-backtest_tasks = {}
+# 基金数据更新状态追踪
+fund_update_status = {"is_running": False, "message": "", "last_result": None}
+
+@app.route('/api/update-fund-data', methods=['POST'])
+def api_update_fund_data():
+    global fund_update_status
+    if fund_update_status["is_running"]:
+        return jsonify({"status": "running", "message": "爬虫正在运行中"}), 200
+
+    fund_update_status = {"is_running": True, "message": "正在抓取基金数据...", "last_result": None}
+
+    def run_crawler():
+        global fund_update_status
+        project_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(project_dir, 'real_fund_crawler.py')
+        try:
+            result = subprocess.run(
+                [sys.executable, script_path],
+                capture_output=True, text=True, timeout=120, cwd=project_dir
+            )
+            if result.returncode == 0:
+                fund_update_status = {"is_running": False, "message": "数据抓取完成", "last_result": "success"}
+            else:
+                fund_update_status = {"is_running": False, "message": "抓取失败: " + (result.stderr[-200:] or result.stdout[-200:]), "last_result": "error"}
+        except Exception as e:
+            fund_update_status = {"is_running": False, "message": f"爬虫异常: {str(e)}", "last_result": "error"}
+
+    thread = threading.Thread(target=run_crawler)
+    thread.start()
+    return jsonify({"status": "started", "message": "爬虫已启动"}), 200
+
+@app.route('/api/get-fund-data', methods=['GET'])
+def api_get_fund_data():
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(project_dir, 'real_fund_data.json')
+    try:
+        with open(data_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/get-fund-update-status', methods=['GET'])
+def api_get_fund_update_status():
+    return jsonify(fund_update_status)
+
+@app.route('/api/get-market-data', methods=['GET'])
+def api_get_market_data():
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(project_dir, 'market_data.js')
+    try:
+        with open(data_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        match = __import__('re').search(r'var MARKET_DATA = ({.*});', content, __import__('re').DOTALL)
+        if match:
+            return jsonify({"success": True, "data": json.loads(match.group(1))})
+        return jsonify({"success": False, "message": "无法解析market_data.js"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/get-signal-history', methods=['GET'])
+def api_get_signal_history():
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(project_dir, 'daily_log.csv')
+    json_path = os.path.join(project_dir, 'daily_log.json')
+    result = {"signals": [], "daily_logs": []}
+    if os.path.exists(csv_path):
+        rows = read_daily_csv(csv_path)
+        result["signals"] = rows[-30:] if len(rows) > 30 else rows
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                result["daily_logs"] = json.load(f)
+        except:
+            pass
+    return jsonify(result)
 
 @app.route('/api/backtest', methods=['POST'])
 def api_start_backtest():
@@ -1012,6 +1104,8 @@ def api_review_history():
 
 @app.route('/api/ta/analyze', methods=['POST'])
 def api_ta_analyze():
+    if not _ta_available:
+        return jsonify({"error": "TradingAgents 模块不可用"}), 503
     data = request.json
     provider = data.get('provider', 'openai')
     api_key = data.get('api_key', '')
@@ -1051,17 +1145,23 @@ def api_ta_analyze():
 
 @app.route('/api/ta/current-data', methods=['GET'])
 def api_ta_current_data():
+    if not _ta_available:
+        return jsonify({"error": "TradingAgents 模块不可用"}), 503
     summary = get_current_data_summary()
     return jsonify({"summary": summary})
 
 
 @app.route('/api/ta/config', methods=['POST'])
 def api_ta_config():
+    if not _ta_available:
+        return jsonify({"error": "TradingAgents 模块不可用"}), 503
     return jsonify({"success": True, "message": "Config saved"})
 
 
 @app.route('/api/ta/cancel', methods=['POST'])
 def api_ta_cancel():
+    if not _ta_available:
+        return jsonify({"error": "TradingAgents 模块不可用"}), 503
     data = request.json
     task_id = data.get('task_id', '')
     if task_id:
@@ -1072,6 +1172,8 @@ def api_ta_cancel():
 
 @app.route('/api/ta/chat', methods=['POST'])
 def api_ta_chat():
+    if not _ta_available:
+        return jsonify({"error": "TradingAgents 模块不可用"}), 503
     data = request.json
     provider = data.get('provider', 'openai')
     api_key = data.get('api_key', '')
