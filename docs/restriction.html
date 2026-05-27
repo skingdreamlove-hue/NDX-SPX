@@ -402,7 +402,7 @@
             document.getElementById('fundList').style.display = 'none';
             document.getElementById('updateTime').textContent = '正在加载...';
 
-            fetch('real_fund_data.json?t=' + Date.now())
+            fetch('data/real_fund_data.json?t=' + Date.now())
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     allFunds = data;
@@ -423,7 +423,7 @@
             document.getElementById('fundList').style.display = 'none';
             document.getElementById('updateTime').textContent = '正在从 GitHub 获取...';
 
-            return fetchRawFile('real_fund_data.json').then(function(data) {
+            return fetchRawFile('docs/data/real_fund_data.json').then(function(data) {
                 allFunds = data;
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('fundList').style.display = 'flex';

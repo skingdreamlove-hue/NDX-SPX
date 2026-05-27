@@ -763,15 +763,15 @@ function triggerGHAUpdate(){
   if($id('btnGHATrigger').classList.contains('spinning'))return;
   var btn=$id('btnGHATrigger');btn.classList.add('spinning');
   showToast('正在触发 GitHub Actions...');
-  triggerGHA().then(function(r){if(!r.ok&&r.status!==204)throw Error('触发失败');showToast('GHA 已触发，等待完成...');return waitForGHA()})
-    .then(function(){showToast('更新完成，加载最新数据');return refreshAll()})
-    .catch(function(e){showToast('GHA 失败: '+e.message);console.error(e)})
+  triggerGHA().then(function(r){if(r.status===401||r.status===403)throw Error('Token 无效，请重新设置');if(!r.ok&&r.status!==204)throw Error('HTTP '+r.status+' 触发失败');showToast('GHA 已触发，等待完成...');return waitForGHA()})
+  .then(function(){showToast('更新完成');return refreshAll()})
+  .catch(function(e){showToast(e.message);console.error(e)})
     .finally(function(){btn.classList.remove('spinning')})
 }
 
 function refreshAll(){
   var btn=$id('btnRefresh');btn.classList.add('spinning')
-  var p = GH_TOKEN ? fetchRawFile('market_data.json').then(function(d){if(d&&d.last_update){currentData=d;$id('updateTime').textContent=d.last_update.slice(5,16)}setStatus(false,'实时数据: '+(d.last_update||'未知'))}).catch(function(){return loadStaticData()}) : loadStaticData();
+  var p = GH_TOKEN ? fetchRawFile('docs/data/latest.json').then(function(d){if(d&&d.last_update){currentData=d;$id('updateTime').textContent=d.last_update.slice(5,16)}setStatus(false,'实时数据: '+(d.last_update||'未知'))}).catch(function(){return loadStaticData()}) : loadStaticData();
   p.then(function(){return loadLiveData()}).then(function(){buildSentimentUI()})
     .catch(function(e){console.error(e);if(!currentData){$id('panelSentiment').innerHTML='<div class="error-box"><div class="msg">数据加载失败</div><button onclick="refreshAll()">重试</button></div>'}else{buildSentimentUI()}})
     .finally(function(){

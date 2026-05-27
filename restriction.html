@@ -452,6 +452,9 @@
             t.style.color = '#F59E0B';
 
             triggerGHA().then(function(resp) {
+                if (resp.status === 401 || resp.status === 403) {
+                    throw new Error('Token 无效，请重新设置');
+                }
                 if (!resp.ok && resp.status !== 204) {
                     throw new Error('触发失败 (HTTP ' + resp.status + ')');
                 }
