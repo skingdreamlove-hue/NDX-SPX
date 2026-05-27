@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-05-27 16:09:33",
+  "_generated": "2026-05-27 16:12:49",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
@@ -8,18 +8,18 @@
   "daily_buy_amount": 300.0,
   "current_vix": 16.950000762939453,
   "vix_term_ratio": 0.8534743324279991,
-  "current_nasdaq100": 29890.015625,
-  "current_sp500": 7509.31982421875,
-  "nasdaq100_drawdown": -0.7,
-  "sp500_drawdown": -0.39,
-  "nasdaq100_dev_ma200": 18.04,
-  "sp500_dev_ma200": 10.12,
-  "ndx_spx_ratio": 3.9804,
-  "iwm_spy_ratio": 0.3869,
-  "tnx_ma50_diff": 2.26,
+  "current_nasdaq100": 29923.6875,
+  "current_sp500": 7513.72021484375,
+  "nasdaq100_drawdown": -0.59,
+  "sp500_drawdown": -0.34,
+  "nasdaq100_dev_ma200": 18.17,
+  "sp500_dev_ma200": 10.19,
+  "ndx_spx_ratio": 3.9825,
+  "iwm_spy_ratio": 0.3872,
+  "tnx_ma50_diff": 2.31,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-05-27 16:09:33",
+  "last_update": "2026-05-27 16:12:49",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -31,19 +31,19 @@
     "daily_buy": 300.0
   },
   "indices": {
-    "nasdaq100": 29890.015625,
-    "sp500": 7509.31982421875,
-    "nasdaq100_drawdown": -0.7,
-    "sp500_drawdown": -0.39,
-    "nasdaq100_dev_ma200": 18.04,
-    "sp500_dev_ma200": 10.12
+    "nasdaq100": 29923.6875,
+    "sp500": 7513.72021484375,
+    "nasdaq100_drawdown": -0.59,
+    "sp500_drawdown": -0.34,
+    "nasdaq100_dev_ma200": 18.17,
+    "sp500_dev_ma200": 10.19
   },
   "indicators": {
     "vix": 16.950000762939453,
     "vix_term_ratio": 0.8534743324279991,
-    "tnx_ma50_diff": 2.26,
-    "ndx_spx_ratio": 3.9804,
-    "iwm_spy_ratio": 0.3869
+    "tnx_ma50_diff": 2.31,
+    "ndx_spx_ratio": 3.9825,
+    "iwm_spy_ratio": 0.3872
   },
   "recent_signals": [
     {
