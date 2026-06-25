@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-06-25 20:30:35"
+  "last_update": "2026-06-25 22:53:17"
 };
