@@ -1,13 +1,13 @@
 {
-  "_generated": "2026-07-06 20:19:27",
+  "_generated": "2026-07-06 22:41:48",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
   "position_advice": "目标仓位 100% / 当前仓位 100% / 持有",
   "target_position": 100,
   "daily_buy_amount": 300.0,
-  "current_vix": 15.619999885559082,
-  "vix_term_ratio": 0.8312931944910821,
+  "current_vix": 15.569999694824219,
+  "vix_term_ratio": 0.8290734358649983,
   "current_nasdaq100": 29697.873046875,
   "current_sp500": 7537.43017578125,
   "nasdaq100_drawdown": -3.46,
@@ -19,7 +19,7 @@
   "tnx_ma50_diff": 0.44,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-07-06 20:19:27",
+  "last_update": "2026-07-06 22:41:48",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -39,8 +39,8 @@
     "sp500_dev_ma200": 8.49
   },
   "indicators": {
-    "vix": 15.619999885559082,
-    "vix_term_ratio": 0.8312931944910821,
+    "vix": 15.569999694824219,
+    "vix_term_ratio": 0.8290734358649983,
     "tnx_ma50_diff": 0.44,
     "ndx_spx_ratio": 3.9401,
     "iwm_spy_ratio": 0.3979
