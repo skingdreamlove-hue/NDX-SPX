@@ -1,25 +1,25 @@
 {
-  "_generated": "2026-07-15 15:58:00",
+  "_generated": "2026-07-15 17:43:18",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
   "position_advice": "目标仓位 100% / 当前仓位 100% / 持有",
   "target_position": 100,
   "daily_buy_amount": 300.0,
-  "current_vix": 16.06999969482422,
-  "vix_term_ratio": 0.8365434909267392,
-  "current_nasdaq100": 29370.630859375,
-  "current_sp500": 7549.58984375,
-  "nasdaq100_drawdown": -4.52,
-  "sp500_drawdown": -0.94,
-  "nasdaq100_dev_ma200": 11.71,
-  "sp500_dev_ma200": 8.18,
-  "ndx_spx_ratio": 3.8904,
-  "iwm_spy_ratio": 0.3929,
+  "current_vix": 16.020000457763672,
+  "vix_term_ratio": 0.8378660959518024,
+  "current_nasdaq100": 29420.763671875,
+  "current_sp500": 7558.22998046875,
+  "nasdaq100_drawdown": -4.36,
+  "sp500_drawdown": -0.82,
+  "nasdaq100_dev_ma200": 11.9,
+  "sp500_dev_ma200": 8.3,
+  "ndx_spx_ratio": 3.8925,
+  "iwm_spy_ratio": 0.393,
   "tnx_ma50_diff": 1.35,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-07-15 15:58:00",
+  "last_update": "2026-07-15 17:43:18",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -31,19 +31,19 @@
     "daily_buy": 300.0
   },
   "indices": {
-    "nasdaq100": 29370.630859375,
-    "sp500": 7549.58984375,
-    "nasdaq100_drawdown": -4.52,
-    "sp500_drawdown": -0.94,
-    "nasdaq100_dev_ma200": 11.71,
-    "sp500_dev_ma200": 8.18
+    "nasdaq100": 29420.763671875,
+    "sp500": 7558.22998046875,
+    "nasdaq100_drawdown": -4.36,
+    "sp500_drawdown": -0.82,
+    "nasdaq100_dev_ma200": 11.9,
+    "sp500_dev_ma200": 8.3
   },
   "indicators": {
-    "vix": 16.06999969482422,
-    "vix_term_ratio": 0.8365434909267392,
+    "vix": 16.020000457763672,
+    "vix_term_ratio": 0.8378660959518024,
     "tnx_ma50_diff": 1.35,
-    "ndx_spx_ratio": 3.8904,
-    "iwm_spy_ratio": 0.3929
+    "ndx_spx_ratio": 3.8925,
+    "iwm_spy_ratio": 0.393
   },
   "recent_signals": [
     {
