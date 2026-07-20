@@ -1,5 +1,5 @@
 var MARKET_DATA = {
-  "current_vix": 18.420000076293945,
+  "current_vix": 18.649999618530273,
   "nasdaq100_drawdown": -7.01,
   "sp500_drawdown": -2.33,
   "sentiment_analysis": "中性",
@@ -8,17 +8,17 @@ var MARKET_DATA = {
   "position_advice": "目标仓位 100% / 当前仓位 100% / 持有",
   "target_position": 100,
   "daily_buy_amount": 300.0,
-  "current_sp500": 7443.35986328125,
+  "current_sp500": 7443.27978515625,
   "current_nasdaq100": 28604.234375,
   "sp500_high": 7620.89990234375,
   "nasdaq100_high": 30762.19921875,
   "sp500_deviation_200ma": 6.47,
   "nasdaq100_deviation_200ma": 8.53,
   "sentiment_result": "中性",
-  "vix_term_ratio": 0.9100790654443929,
+  "vix_term_ratio": 0.9142156846703863,
   "tnx_ma50_diff": 2.22,
   "is_rate_shock": false,
-  "ndx_spx_ratio": 3.8429,
+  "ndx_spx_ratio": 3.843,
   "iwm_spy_ratio": 0.3939,
   "is_aaii_valid": false,
   "credit_spread": null,
@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-07-20 20:04:01"
+  "last_update": "2026-07-20 22:27:15"
 };
