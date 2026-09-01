@@ -15,7 +15,7 @@
   "sp500_deviation_200ma": 7.91,
   "nasdaq100_deviation_200ma": 9.32,
   "sentiment_result": "中性",
-  "vix_term_ratio": 0.8506270979202724,
+  "vix_term_ratio": 0.851112349793581,
   "tnx_ma50_diff": 3.29,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.8325,
@@ -28,5 +28,5 @@
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-08-31 20:13:48"
+  "last_update": "2026-09-01 00:40:47"
 }
