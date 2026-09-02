@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-09-02 21:10:14",
+  "_generated": "2026-09-02 23:23:53",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
@@ -13,13 +13,13 @@
   "nasdaq100_drawdown": -5.26,
   "sp500_drawdown": -1.92,
   "nasdaq100_dev_ma200": 8.0,
-  "sp500_dev_ma200": 7.58,
+  "sp500_dev_ma200": 7.5,
   "ndx_spx_ratio": 3.8013,
   "iwm_spy_ratio": 0.3842,
-  "tnx_ma50_diff": 3.94,
+  "tnx_ma50_diff": 3.84,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-09-02 21:10:14",
+  "last_update": "2026-09-02 23:23:53",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -36,12 +36,12 @@
     "nasdaq100_drawdown": -5.26,
     "sp500_drawdown": -1.92,
     "nasdaq100_dev_ma200": 8.0,
-    "sp500_dev_ma200": 7.58
+    "sp500_dev_ma200": 7.5
   },
   "indicators": {
     "vix": 15.199999809265137,
     "vix_term_ratio": 0.8573040158887631,
-    "tnx_ma50_diff": 3.94,
+    "tnx_ma50_diff": 3.84,
     "ndx_spx_ratio": 3.8013,
     "iwm_spy_ratio": 0.3842
   },
