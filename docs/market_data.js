@@ -19,7 +19,7 @@ var MARKET_DATA = {
   "tnx_ma50_diff": 9.57,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.9404,
-  "iwm_spy_ratio": 0.3657,
+  "iwm_spy_ratio": 0.3656,
   "is_aaii_valid": false,
   "credit_spread": null,
   "qqq_pcr": null,
@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-09-28 20:38:17"
+  "last_update": "2026-09-29 01:04:23"
 };

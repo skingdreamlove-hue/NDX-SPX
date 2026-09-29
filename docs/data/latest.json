@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-09-28 20:38:17",
+  "_generated": "2026-09-29 01:04:23",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
@@ -15,11 +15,11 @@
   "nasdaq100_dev_ma200": 10.59,
   "sp500_dev_ma200": 6.58,
   "ndx_spx_ratio": 3.9404,
-  "iwm_spy_ratio": 0.3657,
+  "iwm_spy_ratio": 0.3656,
   "tnx_ma50_diff": 9.57,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-09-28 20:38:17",
+  "last_update": "2026-09-29 01:04:23",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -43,15 +43,9 @@
     "vix_term_ratio": 0.8815139933268953,
     "tnx_ma50_diff": 9.57,
     "ndx_spx_ratio": 3.9404,
-    "iwm_spy_ratio": 0.3657
+    "iwm_spy_ratio": 0.3656
   },
   "recent_signals": [
-    {
-      "date": "2026-09-15",
-      "emotion": "中性",
-      "position": "100%",
-      "action": "目标仓位 100% / 当前仓位 100% / 持有"
-    },
     {
       "date": "2026-09-16",
       "emotion": "中性",
@@ -102,6 +96,12 @@
     },
     {
       "date": "2026-09-28",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "目标仓位 100% / 当前仓位 100% / 持有"
+    },
+    {
+      "date": "2026-09-29",
       "emotion": "中性",
       "position": "100%",
       "action": "目标仓位 100% / 当前仓位 100% / 持有"
