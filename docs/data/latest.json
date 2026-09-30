@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-09-29 19:30:20",
+  "_generated": "2026-09-30 00:35:28",
   "sentiment_result": "中性",
   "signal_strength": "★ 弱",
   "sentiment_conditions": [],
@@ -8,18 +8,18 @@
   "daily_buy_amount": 300.0,
   "current_vix": 16.040000915527344,
   "vix_term_ratio": 0.8866777656291351,
-  "current_nasdaq100": 30346.880859375,
-  "current_sp500": 7675.259765625,
-  "nasdaq100_drawdown": -1.38,
-  "sp500_drawdown": -1.81,
-  "nasdaq100_dev_ma200": 10.76,
-  "sp500_dev_ma200": 6.4,
-  "ndx_spx_ratio": 3.9539,
-  "iwm_spy_ratio": 0.3646,
+  "current_nasdaq100": 30339.33203125,
+  "current_sp500": 7670.83984375,
+  "nasdaq100_drawdown": -1.4,
+  "sp500_drawdown": -1.87,
+  "nasdaq100_dev_ma200": 10.73,
+  "sp500_dev_ma200": 6.34,
+  "ndx_spx_ratio": 3.9552,
+  "iwm_spy_ratio": 0.3657,
   "tnx_ma50_diff": 9.58,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-09-29 19:30:20",
+  "last_update": "2026-09-30 00:35:28",
   "sentiment": {
     "level": "中性",
     "strength": "★ 弱",
@@ -31,27 +31,21 @@
     "daily_buy": 300.0
   },
   "indices": {
-    "nasdaq100": 30346.880859375,
-    "sp500": 7675.259765625,
-    "nasdaq100_drawdown": -1.38,
-    "sp500_drawdown": -1.81,
-    "nasdaq100_dev_ma200": 10.76,
-    "sp500_dev_ma200": 6.4
+    "nasdaq100": 30339.33203125,
+    "sp500": 7670.83984375,
+    "nasdaq100_drawdown": -1.4,
+    "sp500_drawdown": -1.87,
+    "nasdaq100_dev_ma200": 10.73,
+    "sp500_dev_ma200": 6.34
   },
   "indicators": {
     "vix": 16.040000915527344,
     "vix_term_ratio": 0.8866777656291351,
     "tnx_ma50_diff": 9.58,
-    "ndx_spx_ratio": 3.9539,
-    "iwm_spy_ratio": 0.3646
+    "ndx_spx_ratio": 3.9552,
+    "iwm_spy_ratio": 0.3657
   },
   "recent_signals": [
-    {
-      "date": "2026-09-16",
-      "emotion": "中性",
-      "position": "100%",
-      "action": "目标仓位 100% / 当前仓位 100% / 持有"
-    },
     {
       "date": "2026-09-17",
       "emotion": "中性",
@@ -102,6 +96,12 @@
     },
     {
       "date": "2026-09-29",
+      "emotion": "中性",
+      "position": "100%",
+      "action": "目标仓位 100% / 当前仓位 100% / 持有"
+    },
+    {
+      "date": "2026-09-30",
       "emotion": "中性",
       "position": "100%",
       "action": "目标仓位 100% / 当前仓位 100% / 持有"
