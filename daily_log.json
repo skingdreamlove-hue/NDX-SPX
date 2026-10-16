@@ -3748,5 +3748,29 @@
       "target_position": "100%",
       "action": "目标仓位 100% / 当前仓位 100% / 持有"
     }
+  },
+  {
+    "date": "2026-10-16",
+    "market_data": {
+      "ndx": 29243.669921875,
+      "spx": 7656.77978515625,
+      "ndx_drawdown": -6.75,
+      "spx_drawdown": -2.39,
+      "ndx_deviation_ma200": 5.43,
+      "spx_deviation_ma200": 5.3,
+      "vix": 20.81999969482422,
+      "vix_term": 1.0028901476532217,
+      "vix_term_days": 0,
+      "rate_shock": false,
+      "ndx_spx_deviation": 3.8193,
+      "iwm_spy_deviation": 0.3542
+    },
+    "signal": {
+      "emotion": "极度恐慌",
+      "strength": "★★★ 中等",
+      "triggered_conditions": [],
+      "target_position": "100%",
+      "action": "目标仓位 100% / 当前仓位 100% / 持有"
+    }
   }
 ]
