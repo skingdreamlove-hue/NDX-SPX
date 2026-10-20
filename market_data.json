@@ -1,5 +1,5 @@
 {
-  "current_vix": 18.260000228881836,
+  "current_vix": 18.440000534057617,
   "nasdaq100_drawdown": -5.84,
   "sp500_drawdown": -1.96,
   "sentiment_analysis": "中性",
@@ -8,18 +8,18 @@
   "position_advice": "目标仓位 100% / 当前仓位 100% / 持有",
   "target_position": 100,
   "daily_buy_amount": 300.0,
-  "current_sp500": 7690.759765625,
+  "current_sp500": 7690.72998046875,
   "current_nasdaq100": 29529.34375,
   "sp500_high": 7844.52001953125,
   "nasdaq100_high": 31361.369140625,
-  "sp500_deviation_200ma": 5.71,
+  "sp500_deviation_200ma": 5.7,
   "nasdaq100_deviation_200ma": 6.38,
   "sentiment_result": "中性",
-  "vix_term_ratio": 0.9378531521753718,
+  "vix_term_ratio": 0.940816335467585,
   "tnx_ma50_diff": 3.68,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.8396,
-  "iwm_spy_ratio": 0.3537,
+  "iwm_spy_ratio": 0.3543,
   "is_aaii_valid": false,
   "credit_spread": null,
   "qqq_pcr": null,
@@ -28,5 +28,5 @@
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-10-19 20:01:12"
+  "last_update": "2026-10-20 00:27:32"
 }
