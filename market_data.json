@@ -1,5 +1,5 @@
 {
-  "current_vix": 26.65999984741211,
+  "current_vix": 28.18000030517578,
   "nasdaq100_drawdown": -15.09,
   "sp500_drawdown": -6.26,
   "sentiment_analysis": "极度恐慌",
@@ -15,11 +15,11 @@
   "sp500_deviation_200ma": 0.42,
   "nasdaq100_deviation_200ma": -4.81,
   "sentiment_result": "极度恐慌",
-  "vix_term_ratio": 1.0750000269182276,
+  "vix_term_ratio": 1.1029354656222607,
   "tnx_ma50_diff": -3.84,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.6213,
-  "iwm_spy_ratio": 0.3697,
+  "iwm_spy_ratio": 0.3704,
   "is_aaii_valid": false,
   "credit_spread": null,
   "qqq_pcr": null,
@@ -28,5 +28,5 @@
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-11-05 21:08:09"
+  "last_update": "2026-11-06 01:39:44"
 }
