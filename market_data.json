@@ -19,7 +19,7 @@
   "tnx_ma50_diff": 1.03,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.726,
-  "iwm_spy_ratio": 0.3678,
+  "iwm_spy_ratio": 0.3726,
   "is_aaii_valid": false,
   "credit_spread": null,
   "qqq_pcr": null,
@@ -28,5 +28,5 @@
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-11-12 21:30:17"
+  "last_update": "2026-11-13 01:58:32"
 }
