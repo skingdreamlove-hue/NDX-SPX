@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-11-24 01:45:39",
+  "_generated": "2026-11-24 05:22:38",
   "sentiment_result": "极度恐慌",
   "signal_strength": "★★★ 中等",
   "sentiment_conditions": [],
@@ -8,18 +8,18 @@
   "daily_buy_amount": 1500.0,
   "current_vix": 26.6200008392334,
   "vix_term_ratio": 1.0439216015385646,
-  "current_nasdaq100": 26746.095703125,
+  "current_nasdaq100": 26746.099609375,
   "current_sp500": 7237.169921875,
   "nasdaq100_drawdown": -14.72,
   "sp500_drawdown": -7.74,
   "nasdaq100_dev_ma200": -4.76,
   "sp500_dev_ma200": -1.54,
   "ndx_spx_ratio": 3.6957,
-  "iwm_spy_ratio": 0.372,
+  "iwm_spy_ratio": 0.3679,
   "tnx_ma50_diff": -3.12,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-11-24 01:45:39",
+  "last_update": "2026-11-24 05:22:38",
   "sentiment": {
     "level": "极度恐慌",
     "strength": "★★★ 中等",
@@ -31,7 +31,7 @@
     "daily_buy": 1500.0
   },
   "indices": {
-    "nasdaq100": 26746.095703125,
+    "nasdaq100": 26746.099609375,
     "sp500": 7237.169921875,
     "nasdaq100_drawdown": -14.72,
     "sp500_drawdown": -7.74,
@@ -43,7 +43,7 @@
     "vix_term_ratio": 1.0439216015385646,
     "tnx_ma50_diff": -3.12,
     "ndx_spx_ratio": 3.6957,
-    "iwm_spy_ratio": 0.372
+    "iwm_spy_ratio": 0.3679
   },
   "recent_signals": [
     {

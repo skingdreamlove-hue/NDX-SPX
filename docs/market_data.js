@@ -9,7 +9,7 @@ var MARKET_DATA = {
   "target_position": 100,
   "daily_buy_amount": 1500.0,
   "current_sp500": 7237.169921875,
-  "current_nasdaq100": 26746.095703125,
+  "current_nasdaq100": 26746.099609375,
   "sp500_high": 7844.52001953125,
   "nasdaq100_high": 31361.369140625,
   "sp500_deviation_200ma": -1.54,
@@ -19,7 +19,7 @@ var MARKET_DATA = {
   "tnx_ma50_diff": -3.12,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.6957,
-  "iwm_spy_ratio": 0.372,
+  "iwm_spy_ratio": 0.3679,
   "is_aaii_valid": false,
   "credit_spread": null,
   "qqq_pcr": null,
@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-11-24 01:45:39"
+  "last_update": "2026-11-24 05:22:38"
 };
