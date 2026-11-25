@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-11-24 23:33:23",
+  "_generated": "2026-11-25 04:21:54",
   "sentiment_result": "极度恐慌",
   "signal_strength": "★★★ 中等",
   "sentiment_conditions": [],
@@ -19,7 +19,7 @@
   "tnx_ma50_diff": -3.35,
   "rate_shock": false,
   "is_live": false,
-  "last_update": "2026-11-24 23:33:23",
+  "last_update": "2026-11-25 04:21:54",
   "sentiment": {
     "level": "极度恐慌",
     "strength": "★★★ 中等",
@@ -46,12 +46,6 @@
     "iwm_spy_ratio": 0.3717
   },
   "recent_signals": [
-    {
-      "date": "2026-11-12",
-      "emotion": "中性",
-      "position": "100%",
-      "action": "目标仓位 100% / 当前仓位 100% / 持有"
-    },
     {
       "date": "2026-11-13",
       "emotion": "中性",
@@ -102,6 +96,12 @@
     },
     {
       "date": "2026-11-24",
+      "emotion": "极度恐慌",
+      "position": "100%",
+      "action": "目标仓位 100% / 当前仓位 100% / 持有"
+    },
+    {
+      "date": "2026-11-25",
       "emotion": "极度恐慌",
       "position": "100%",
       "action": "目标仓位 100% / 当前仓位 100% / 持有"
