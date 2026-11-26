@@ -1,5 +1,5 @@
 var MARKET_DATA = {
-  "current_vix": 28.290000915527344,
+  "current_vix": 26.799999237060547,
   "nasdaq100_drawdown": -16.95,
   "sp500_drawdown": -8.44,
   "sentiment_analysis": "极度恐慌",
@@ -9,13 +9,13 @@ var MARKET_DATA = {
   "target_position": 100,
   "daily_buy_amount": 1500.0,
   "current_sp500": 7182.77978515625,
-  "current_nasdaq100": 26046.896484375,
+  "current_nasdaq100": 26046.900390625,
   "sp500_high": 7844.52001953125,
   "nasdaq100_high": 31361.369140625,
   "sp500_deviation_200ma": -2.31,
   "nasdaq100_deviation_200ma": -7.28,
   "sentiment_result": "极度恐慌",
-  "vix_term_ratio": 1.076074550412768,
+  "vix_term_ratio": 1.0193989465109523,
   "tnx_ma50_diff": -4.4,
   "is_rate_shock": false,
   "ndx_spx_ratio": 3.6263,
@@ -28,5 +28,5 @@ var MARKET_DATA = {
   "on_rrp_deviation": null,
   "sp500_breadth_200ma": null,
   "ndx_breadth_200ma": null,
-  "last_update": "2026-11-26 03:39:39"
+  "last_update": "2026-11-26 23:07:27"
 };
